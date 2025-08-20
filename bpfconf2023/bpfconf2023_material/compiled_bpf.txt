@@ -1,0 +1,354 @@
+A few topics regarding _compiled BPF_ along with several proposals to
+be discussed during the entire duration of the event, presented in a
+rushed but always constructive spirit.
+
+  Jose E. Marchesi <jose.marchesi@oracle.com>
+  David Faust <david.faust@oracle.com>
+  Cupertino Miranda <cupertino.miranda@oracle.com>
+
+* Passing C types to CO-RE C builtins
+
+All but one of the existing CO-RE built-ins take arbitrary expressions
+as their first argument:
+
+: __builtin_preserve_field_info (EXPR, KIND)
+: __builtin_btf_type_id (EXPR, KIND)
+: __builtin_preserve_type_info (EXPR, KIND)
+: __builtin_preserve_enum_value (EXPR, KIND)
+
+For this to work, the compiler shall be able to infer the type of
+~EXPR~ from its IR.  Compiler optimizations make this difficult.
+
+Set of "convenience" macros defined in =bpf_core_read.h=:
+
+: #define bpf_core_type_exists(type) \
+:   __builtin_preserve_type_info(*(typeof(type) *)0, KIND)
+: [...]
+
+clang, as of today, works with the three "magic" expressions:
+
+: *(typeof (TYPE) *) 0
+: *(typeof (ENUM_TYPE *) ENUM_VALUE)
+: (((typeof (TYPE) *)0)->FIELD)
+
+The problems we are now facing are:
+
+1. None of these "magic" expressions happen to work with GCC, because
+   it folds constants during parsing and type information gets
+   dissociated from the constant value.
+
+2. This is generally very fragile.  The same expression passed to a
+   built-in may work with compiler A but not with compiler B.  A given
+   compiler may even break if it becomes more efficient or eager in
+   its constant folding, for example.
+
+As we see it, none of this would be necessary if it was possible to
+pass the type explicitly to the built-ins, but this is not possible in
+C.  Ideas?  Maybe using BTF?
+
+*Question:* in the meanwhile, if we find corresponding "magic"
+expressions for GCC, is it ok to have them conditionally defined in
+=bpf_core_read.h=?
+*Answer:* Yes.
+
+* BPF assembler syntax
+
+There are two dialects of BPF assembler in use today:
+
+- A "pseudo-c" dialect (originally "BPF verifier format")
+  : r1 = *(u64 *)(r2 + 0x00f0)
+  : if r1 > 2 goto label
+  : lock *(u32 *)(r2 + 10) += r3
+
+- An "assembler-like" dialect
+  : ldxdw %r1, [%r2 + 0x00f0]
+  : jgt %r1, 2, label
+  : xaddw [%r2 + 2], r3
+
+C = pseudo-c, A = assembler-like
+|                  | Assembler | Disassembler | Compiler     |
+|------------------+-----------+--------------+--------------|
+| clang/rustc/llvm | C         | C            |              |
+| gcc/binutils     | A and C   | A            | A (C is WIP) |
+| ubpf             | A         | A            |              |
+
+We recommend to progressively transition from pseudo-c, because it is:
+
+- Expensive :: it makes it very difficult to reuse infrastructure.
+- Problematic :: dis/assemblers, CGEN, LaTeX, editors, IDEs, etc.
+- Ambiguous :: with both GAS and llvm/MCParser: symbol assignments.
+- Pervasive :: because of the inline asm.
+
+*Question:* Is the eccentricity really worth it?
+*Answer:* They don't want to change the syntax, but we got some
+support from some people present.  We will persist, but it is
+unlikely a change will happen.
+
+In the meanwhile, convergence in expression support:
+- LLVM/BPFAsmParser doesn't seem to support prefix ~ (bitwise not).
+  GAS supports it in both syntaxes.
+- Sub-expressions don't seem to work in LLVM/BPFAsmParser:
+  : r8 += (1 + foo)
+
+* Merging and deduplicating BTF at link time
+
+Currently, the toolchain generates DWARF for the kernel, and in turn
+pahole generates BTF from DWARF:
+
+: make kernel ---> DWARF ---> pahole ---> BTF
+
+This introduces the following requirement for BTF:
+
+*All the information expressed in BTF shall be conveyable in standard
+DWARF*
+
+This coupling is problematic, because:
+
+1. DWARF is difficult to extend without breaking it.
+2. Proper additions to DWARF shall be done through the standard.
+3. The kernel's DWARF is gigantic.  Deduplicated BTF isn't.
+
+Example: conveying BTF type tags in DWARF.
+
+Solution: to merge and deduplicate BTF at link time.
+
+: make kernel ---> BTF ---> pahole -> BTF'
+
+The GNU linker can already merge and deduplicate CTF.  This could be
+extended to BTF.
+
+* Instruction classes and  ~struct bpf_insn~
+
+The ~struct bpf_insn~ is part of the kernel's UAPI and defines the
+encoding of stored BPF instructions:
+
+: struct bpf_insn {
+:       __u8    code;           /* opcode */
+:       __u8    dst_reg:4;      /* dest register */
+:       __u8    src_reg:4;      /* source register */
+:       __s16   off;            /* signed offset */
+:       __s32   imm;            /* signed immediate constant */
+: };
+
+Since:
+
+1. The kernel UAPI cannot _ever_ be broken.
+2. The opcodes space in ~code~ is very small.
+
+We are being forced to abuse multi-byte or infra-byte instruction
+fields as opcodes:
+
+: sdiv/smod ::= <code = 0x3, off16 = 1>
+
+This is:
+
+- Wasteful :: you have to use the whole existing field for opcodes.
+- Complicated :: opcodes encoded in big and little endian.
+
+*Question:* could ~struct bpf_insn~ be evolved somehow, in a backwards
+compatible way, to allow having /instruction classes/ in BPF like in
+other architectures?
+*Answer:* Adding additional structure types like bpf_alu_insn below is
+considered as a viable possibility.  Additional corridor discussion
+discussed that even using unions within the existing bpf_alu_insn may
+also be done without breaking uapi.
+
+** Example of instruction class: ALU instructions
+
+: struct bpf_alu_insn {
+:       __u8    code;           /* opcode */
+:       __u8    dst_reg:4;      /* dest register */
+:       __u8    src_reg:4;      /* source register */
+:       __u8    code2;          /* ALU instruction additional opcodes */
+:       __u8    unused;
+:       __s32   imm;            /* signed immediate constant */
+: };
+
+* Type tags in BTF and DWARF
+
+*Question:* What about -std= and C2X support?
+*Answer:* It is ok for kernel BPF to just pass -std=c2x once this
+support is in.
+
+** Kernel BTF loader expects type tags to "jump over" typedefs
+The kernel BTF loader requires that for a type chain containing both type
+tags and modifiers, all tags precede all modifiers in the chian.
+
+btf_type_is_modifier() in kernel treats typedefs as modifiers. Sometimes
+typedefs are filtered out at the call site, but not always.
+
+As a result, BTF loading currently requires type tags to precede typedefs
+in a chain.
+
+Consider a typedef and pair of variables using it:
+: typedef int __tag1 bar;
+: const bar var1;
+: bar var2;
+
+In DWARF it is clear where the tag belongs:
+: var1 -> const -> typedef (bar) -> int
+:                      ^             |
+:                      |           __tag1
+:                      |
+: var2 ----------------+
+
+But in BTF, the above reordering requirement results int:
+: var1 -> __tag1 -> const -> typedef(bar) -> int
+: var2 -> __tag1 ----------> typedef(bar) -> int
+
+Problem: cannot reconstruct C code for these two decls from this BTF.
+This is a reasonable reconstructiong, which is not correct:
+: typedef int bar;
+: const bar __tag1 var1;
+: bar __tag1 var2
+
+We suggest this be fixed in the kernel, either in btf_type_is_modifier()
+or by filtering typedefs at the relevant call sites. Would this be a
+problem?
+
+** DWARF representation of tags
+In BPF office hours meetings early this year we decided on some changes
+to the DWARF format for tags. Basically:
+- Place type tag annotaiton DIEs as children of exactly the type to which
+  they appertain.
+- DW_TAG_{llvm,gnu}_annotation DIEs using DW_AT_name "btf:type_tag"
+  (to distinguish from old "btf_type_tag")
+
+Ideally, annotation DIEs would be directly part of the DW_AT_type chain,
+similar to DIEs for const/volatile/restrict (CVR) modifiers. But that
+would break DWARF for consumers unaware of the annotation DIEs, which
+are not part of the DWARF standard.
+
+Working on the implementations for the new format revealed some other
+interactions worth noting:
+
+*** const/volatile/restrict + type tags
+Treat type tags like cvr-qualifiers => "bind at the same level"
+
+DWARF representation for types with multiple CVR modifiers does not
+distinguish the order of the modifiers:
+: const volatile int x;
+both are valid DWARF:
+: x -> const -> volatile -> int
+: x -> volatile -> const -> int
+and indeed gcc and clang emit one or the other
+
+Convention: If a type has both const/volatile/restrict qualifiers and
+type tags, place tags as child of the base (qualified) type rather than
+any of the qualifiers.
+e.g.
+: const int __tag1 x;
+:
+:   x -> const -> int
+:                  |
+:                __tag1
+
+
+*** typedef + type tags
+Type tags must not reorder past typedef DIEs, to distinguish between
+tags which are part of the type definition, and those which are part
+of the specific use of that type.
+
+Multiple uses of a typedef with differing tags requires multiple copies
+of typedef DIE for that name:
+: typedef int __tag1 foo;
+: foo y;
+: foo __tag2 x;
+:
+:      y -> typedef(foo) ----+----> int
+:                            ^       |
+:                            |     __tag1
+:                            |
+:      x -> typedef(foo) ----+
+:               |
+:             __tag2
+
+** C2x standard attribute syntax
+We agreed to use C2x standard attribute syntax for the btf_type_tag
+attribute, to avoid some cases where C compilers and sparse associate
+the attribute to different elements of a declartion.
+
+C2x standard attribute syntax precise and allows for drop-in replacement
+of the sparse attributes (e.g. __user).
+
+Both gcc and clang already support the syntax, but we may need to add
+a flag to both compilers to enable the attribute syntax when compiling
+with a different -std= specifically specified.
+
+: const int [[[[btf_type_tag("tag1")]]]] * [ [btf_type_tag("tag2")]] x;
+
+Something like ~-fc2x-attributes~.
+
+* ABI: passing little structs in registers
+
+This was an ABI change implemented in clang/llvm:
+https://reviews.llvm.org/D132144
+
+Before this change all structs were passed by reference.
+
+From the change description above:
+
+- Record arguments of up to 16 bytes are passed in register arguments.
+- If the size of the record is zero, it uses 0 register arguments.
+- If the size > 16 bytes, the record argument is passed by reference.
+- There is no limit in the number of struct arguments passed by value,
+  other than indirectly the generic limit of five registers.
+
+*Question:* what about packed structs and unaligned fields?
+*Answer:* the suggestion of doing like what x86_64 psABI does, i.e. to
+pass these by reference, is considered as a sensible possibily by the
+people present.
+
+*Question:* what about structs that contain other structs.
+*Answer:* apparently these are handled recursively by clang.  But it
+was agreed that we need to clarify, agree and document.
+
+* Rust and BTF
+
+*Question:* Is the Rust type system reducible to the C type system?
+*Answer:* Definitely not.
+*Question:* If not, is BTF able to express Rust types?
+*Answer:* No.
+
+rustc and GCC should emit the same BTF for Rust.
+
+*Question:* How are we gonna coordinate?
+*Answer:* people agreed that we do should coordinate.
+
+* Coordination between toolchains
+
+- bpf@vger :: https://vger.kernel.org/vger-lists.html
+  + We get in CC when something changes in clang/llvm.
+  + But the volume is very high and it is difficult to follow.
+  + *Question:* What about crust?
+  + *Answer:* they should be included too.
+  + *Question:* compiled BPF/toolchain specific list?
+  + *Answer:* agreed to create one.  Not clear who will do that.
+
+- bpf@ietf.org :: https://mailarchive.ietf.org/
+  + At the moment this covers the ISA.
+  + Both clang/llvm and GCC hackers are there.
+  + *Question:* are there plans to document/standardize the ABI at
+    some point?
+  + *Answer:* yes, it is within scope.
+
+- GCC BPF wiki (covers binutils) :: https://gcc.gnu.org/wiki/BPFBackEnd
+  + It is possible to subscribe to pages to get notifications when
+    something changes.
+  + *Question:* We could subscribe the BPF toolchain list if it
+    existed.
+  + *Answer:* yes that would be appropriate.
+
+- Clang/llvm issues :: https://reviews.llvm.org
+  + We (David and jemarch) get notifications when Yonghong opens a new
+    issue.
+  + *Question:* Is this enough?
+
+- BPF office hours ::
+https://docs.google.com/spreadsheets/d/1LfrDXZ9-fdhvPEp_LHkxAMYyxxpwBXjywWa0AejEveU/edit?usp=sharing
+  + We have discussed about some toolchain related issues there.
+  + But discussing the details tend to eat all the time of the meeting.
+  + *Question:* schedule a monthly meeting to discuss toolchain issues?
+  + *Answer:* yes.
+
+*Question:* Anything else?  How can we do better?

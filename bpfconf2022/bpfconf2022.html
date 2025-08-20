@@ -1,0 +1,233 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Linux Kernel Developers' bpfconf 2022</title>
+<style>
+.collapsible {
+    background-color: white;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: 2px;
+    text-align: left;
+    outline: none;
+    color: black;
+    text-decoration: none;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.content {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible:after {
+    content: "\02795";
+    font-size: 13px;
+    color: black;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: "\2796";
+}
+
+.speaker {
+    font-size: 11px;
+    color: grey;
+    display: inline;
+    margin-left: 10px;
+}
+</style>
+	</head>
+	 <body bgcolor="#ffffff">
+	  <table border="0" width="850">
+	   <tbody>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td valign="top" align="center" colspan="2">
+	<h1>Linux Kernel Developers' bpfconf 2022</h1><br>
+	<img src="bpfconf2022_material/bpf_logo.png" width="180">
+</td></tr>
+<tr><td><br></td>
+<tr><td><br></td>
+<tr><td></td>
+<td>
+bpfconf is an invitation-only technical workshop run by the Linux
+community in order to bring BPF core developers together, to discuss
+new ideas and to work out improvements to the BPF subsystem
+that will make their way into future mainline kernels and into
+the LLVM BPF backend.
+<p>
+The conference is purposely kept small with focus on discussion rather
+than just presentation. Along with the LPC's <a href="https://lore.kernel.org/bpf/cd33ca74-aec9-ff57-97d5-55d8b908b0ba@iogearbox.net" target="_new">BPF and Networking Track</a>
+which is organized and run by the same community, the goal is to allow
+developers to meet face to face twice per year to exchange and discuss
+ongoing developments in the BPF ecosystem.
+</p><p>
+The 2022 bpfconf edition is a three-days conference which is part of the
+<a href="https://events.linuxfoundation.org/lsfmm/" target="_new">LSF/MM/BPF summit</a>. It is therefore also open to all LSF/MM/BPF attendees.</p>
+
+<h2>Discussion Topics</h2>
+
+<p>The following discussion topics have been brought up at this
+year's bpfconf. In each slot below, there is a short discussion
+topic with a link to the corresponding slides in case slides have
+been used as a discussion starter.
+</p>
+<p>
+Raw notes for some of the sessions have been collected <a href="bpfconf2022_material/lsfmmbpf2022-raw-notes.pdf" target="_new">here</a>.
+</p>
+
+<table border = "1" cellpadding="3" cellspacing="1">
+<tr>
+  <th width="250">Name</th>
+  <th width="550">Topic</th>
+</tr>
+<tr>
+  <td>Hao Luo</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-cgroup.pdf" target="_new">Extend cgroupfs and procfs with custom stats collection via BPF</a></td>
+</tr>
+<tr>
+  <td>Joanne Koong</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-dynptr.pdf" target="_new">BPF Dynamic Pointers</a></td>
+</tr>
+<tr>
+  <td>Song Liu</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-container.pdf" target="_new">BPF Container Debugging</a></td>
+</tr>
+<tr>
+  <td>Dave Thaler</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-crossplat.pdf" target="_new">Evolving libbpf and bpftool to be cross-platform</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td>BPF sockmap updates and new features</td>
+</tr>
+<tr>
+  <td>KP Singh</td>
+  <td>BPF for "standard interface" flexibility</td>
+</tr>
+<tr>
+  <td>Brendan Gregg</td>
+  <td>BPF observability tools update</td>
+</tr>
+<tr>
+  <td>Roberto Sassu</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-diglim.pdf" target="_new">DIGLIM eBPF: Secure boot at application level with minimal changes to distros</a></td>
+</tr>
+<tr>
+  <td>Jason Baker</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-signing.pdf" target="_new">BPF program signing and extended BPF policies</a></td>
+</tr>
+<tr>
+  <td>KP Singh</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-xattr.pdf" target="_new">BPF for security domain</a></td>
+</tr>
+<tr>
+  <td>Yonghong Song</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-clang.pdf" target="_new">Making write BPF programs more pleasant</a></td>
+</tr>
+<tr>
+  <td>Mykola Lysenko</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-bpf-ci.pdf" target="_new">BPF CI current state and next steps</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td>Clang and BPF: What is a regression?</td>
+</tr>
+<tr>
+  <td>Brendan Gregg et al.</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-bpf-wip-guidelines.pdf" target="_new">BPF BSC guidelines for newcomers</a> (<a href="https://tinyurl.com/bpfguidelines2022" target="_new">latest</a>)</td>
+</tr>
+<tr>
+  <td>Yonghong Song</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-kfunc.pdf" target="_new">Comprehensive BPF kfunc support</a></td>
+</tr>
+<tr>
+  <td>Steven Rostedt</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-klp.pdf" target="_new">Kernel Live Patching and BPF</a></td>
+</tr>
+<tr>
+  <td>Daniel Borkmann</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-networking.pdf" target="_new">tc BPF rework and uveth for native host performance for K8s Pods</a></td>
+</tr>
+<tr>
+  <td>Andrii Nakryiko</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-algs.pdf" target="_new">Better algorithms and data structures for BPF</a></td>
+</tr>
+<tr>
+  <td>Amir Goldstein</td>
+  <td>overlayfs across cgroupfs and bpffs</td>
+</tr>
+<tr>
+  <td>Hannes Reinecke</td>
+  <td>BPF for block devices</td>
+</tr>
+<tr>
+  <td>Daniel Borkmann</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-networking.pdf" target="_new">BPF socket hooks for connected UDP/TCP</a></td>
+</tr>
+<tr>
+  <td>Christoph Hellwig</td>
+  <td>BPF documentation and standardization</td>
+</tr>
+<tr>
+  <td>KP Singh et al.</td>
+  <td><a href="bpfconf2022_material/lsfmmbpf2022-bpf-wip-roadmap.pdf" target="_new">BPF BSC roadmap document review</a> (<a href="https://tinyurl.com/bpfroadmap2022" target="_new">latest</a>)</td>
+</tr>
+</table>
+
+<h2>Conference Info</h2>
+
+<table border = "0" cellpadding="3" cellspacing="1" width="100%">
+  <tr><td><b>Location:</b></td><td>Palm Springs, California, US, part of LSF/MM/BPF</td></tr>
+  <tr><td><b>Commitee:</b></td><td>Alexei Starovoitov, Daniel Borkmann</td></tr>
+  <tr><td><b>Date:</b></td><td>May 2 - May 4, 2022</td></tr>
+  <tr><td></td><td><a href="https://docs.google.com/spreadsheets/d/15tLPuC_rFbkEducB6XyCsWbvsc-5iIr4nCU9LdIiNRA/edit?usp=sharing" target="_new">Schedule</a></td></tr>
+  <tr><td><b>Attendees</b> (by invitation only)<b>:</b></td><td></td></tr>
+  <tr><td></td><td>Alexei Starovoitov (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Daniel Borkmann (BPF maintainer, Isovalent)</td></tr>
+  <tr><td></td><td>Andrii Nakryiko (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Brendan Gregg (Intel)</td></tr>
+  <tr><td></td><td>Dave Thaler (Microsoft)</td></tr>
+  <tr><td></td><td>David Marchevsky (Meta)</td></tr>
+  <tr><td></td><td>David Vernet (Meta)</td></tr>
+  <tr><td></td><td>Hao Luo (Google)</td></tr>
+  <tr><td></td><td>Jason Baker (Google)</td></tr>
+  <tr><td></td><td>Jiang Wang (Bytedance)</td></tr>
+  <tr><td></td><td>Jiri Olsa (Isovalent)</td></tr>
+  <tr><td></td><td>Joanne Koong (Meta)</td></tr>
+  <tr><td></td><td>Joe Stringer (Isovalent)</td></tr>
+  <tr><td></td><td>John Fastabend (Isovalent)</td></tr>
+  <tr><td></td><td>KP Singh (Google)</td></tr>
+  <tr><td></td><td>Kui-Feng Lee (Meta)</td></tr>
+  <tr><td></td><td>Martin Lau (Meta)</td></tr>
+  <tr><td></td><td>Mykola Lysenko (Meta)</td></tr>
+  <tr><td></td><td>Roberto Sassu (Huawei)</td></tr>
+  <tr><td></td><td>Song Liu (Meta)</td></tr>
+  <tr><td></td><td>Yonghong Song (Meta)</td></tr>
+  <tr><td></td><td>... as well as other attendees from LSF/MM</td></tr>
+</table>
+</p>
+<h2>Group Photo, Attendees</h2>
+<p><center><img src="bpfconf2022_material/bpfconf_group_1.jpg" width="800">
+<small><br>Left to right, back: Yonghong Song, David Vernet, Joe Stringer, Dave Thaler, Paul McKenney, Kui-Feng Lee, Mykola Lysenko, Brendan Gregg, John Fastabend, Alexei Starovoitov, Dave Marchevsky, Roberto Sassu, Jason Baker, Joanne Koong, Jiri Olsa, Song Liu</small>
+<small><br>Left to right, front: Hao Luo, Martin Lau, KP Singh, Daniel Borkmann, Andrii Nakryiko, Jiang Wang</small>
+<br><br><div align="right">(Photo by Daniel Borkmann)</div></center></p>
+<p><center><img src="bpfconf2022_material/bpfconf_group_2.jpg" width="800"><br><br><div align="right">(Photo by Brendan Gregg)</div></center></p>
+<h2>Group Photo, eBPF technical steering committee</h2>
+<p><center><img src="bpfconf2022_material/bpfconf_group_bsc.jpg" width="800">
+<small><br>Left to right: Daniel Borkmann, Brendan Gregg, Alexei Starovoitov, Dave Thaler, Andrii Nakryiko, KP Singh, Joe Stringer, Lorenz Bauer (missing)</small></center>
+<br><div align="right">(Photo by Daniel Borkmann)</div>
+</center></p>
+<h2>Past Events</h2>
+<ul>
+ <li>bpfconf 2020/2021 (cancelled due to COVID restrictions)</li>
+ <li><a href="/bpfconf2019/bpfconf2019.html">bpfconf 2019</a></li>
+</ul>
+
+</li></td></tr>
+</tbody></table>
+</body></html>

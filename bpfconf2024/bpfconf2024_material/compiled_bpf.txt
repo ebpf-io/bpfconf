@@ -1,0 +1,469 @@
+Compiled BPF with GCC @ LSFMMBPF 2024
+
+Jose E. Marchesi, David Faust, Cupertino Miranda
+
+* Status
+** Recent work in binutils
+
+- Rewrote the BPF port to not use cgen anymore.
+
+- Completed support for pseudo-C syntax in assembler and disassembler.
+
+- Added support for all V4 instructions:
+  + Byte swap instructions (16, 32, 64).
+  + Long gotos with 32-bit target displacement.
+  + Signed load instructions.
+  + Signed register moves.
+
+- Added support to the assembler for relaxation of V4 instructions:
+
+  : JA disp16  -> JAL disp32
+  : Jxx disp16 -> Jxx +1; JA +1; JAL disp32
+
+  Option -m[no-]relax, enabled by default.
+
+- Consolidated handling of immediate overflow in the BPF assembler to
+  handle immediate overflows the same way than the clang BPF assembler
+
+  + For an immediate field of N bits, any written number (positive or
+    negative) whose two's complement encoding fit in N its is
+    accepted.  This means that -2 is the same than 0xffffffe.  It is
+    up to the instructions to decide how to interpret the encoded
+    value.
+
+  + Immediate fields in jump instructions are no longer relaxed.
+    Relaxing to jump instructions with wider range is only performed
+    when expressions are involved.
+
+- Added support for EF_BPF_CPUVER bits in the ELF machine-dependent
+  header flags. These bits encode the BPF CPU version for which the
+  object file has been compiled for.
+
+  + A value of zero in EF_BPF_CPUVER is interpreted by the
+    disassembler as "use the later supported version".
+
+  + Disassembler honors EF_BPF_CPUVER to use the appropriate ISA
+    version if the user didn't specify an explicit ISA version in the
+    command line.
+
+  + readelf -h a.out
+
+    : $ readelf -h a.out
+    : ELF Header:
+    :    ...
+    :    Flags:                             0x4, CPU Version: 4
+
+  QUESTION: does clang support this as well?
+
+- Removed some BPF instructions that do not actually exist:
+
+  + DW and LDX variants of BPF_IND/BPF_ABS are not supported
+    by the verifier.
+
+** Recent work in GCC
+
+   - The compiler-shipped bpf-helpers.h workaround file has been
+     removed!
+
+   - Completed CO-RE implementation in GCC, supporting all related
+     compiler attributes and compiler built-ins.  CO-RE is now also
+     enabled by default when generating BPF.
+
+   - GCC now generates BTF by default with -g when generating BPF.
+     Other debugging formats can also be emitted with options like
+     -gdwarf or -gctf.
+
+   - GCC now emits pseudo-C assembly syntax by default.  This is
+     necessary in practice, since Linux kernel BPF headers contain
+     inline asm using that syntax.
+
+   - GCC now inlines __builtin_{memmove,memcpy,memset} into suitable
+     verifier-friendly instruction sequences.  GCC adds a command line
+     option in order to set a threshold that limits the size of buffer
+     in these builtins:
+
+     : -minline-memops-thresthols=3DBYTES  (defaults to 1024)
+
+     If GCC cannot inline calls to these builtins due to the
+     threshold, it emits a suitable compile-time error.
+
+     QUESTION: should clang support the same threshold option?
+
+   - GCC now defines the same BPF feature macros than clang:
+
+     : __BPF_CPU_VERSION__ (1, 2, 3, 4)
+
+     Enabled with -mcpu=3Dv3 or higher:
+
+     : __BPF_FEATURE_ALU32            -m[no-]alu32
+     : __BPF_FEATURE_JMP32            -m[no-]jmp32
+     : __BPF_FEATURE_JMP_EXT          -m[no-]jmp-ext
+     : __BPF_FEATURE_BSWAP            -m[no-]bswap
+     : __BPF_FEATURE_SDIV_SMOD        -m[no-]sdiv
+     : __BPF_FEATURE_MOVSX            -m[no-]smov
+
+     Enabled with -mcpu=3Dv4 or higher:
+
+     : __BPF_FEATURE_LDSX
+     : __BPF_FEATURE_GOTOL
+     : __BPF_FEATURE_ST
+
+     QUESTION: is this part of the standardization?
+
+   - Emit pseudo-C assembly language syntax by default.
+
+   - Fixed printing of memory operands in pseudo-C asm dialect, which
+     were missing surrounding parentheses.  This would break code like:
+
+     :  asm volatile (
+     :  "r1 =3D *(u64 *)%[ctx_a];"
+     :  "if r1 !=3D 42 goto 1f;"
+     :  "r1 =3D *(u64 *)%[ctx_b];"
+     :  "if r1 !=3D 42 goto 1f;"
+     :  ...)
+
+*** Fix GCC to use # to start line comments in assembly code
+
+David Faust.
+https://gcc.gnu.org/pipermail/gcc-patches/2023-November/638663.html
+
+*** Quote section names whenever necessary in assembly output
+
+Jose E. Marchesi
+https://gcc.gnu.org/pipermail/gcc-patches/2023-December/638906.html
+
+In BPF section names are used to encode the kind of BPF program and
+other metadata, involving all sort of non alphanumeric characters.
+
+For example:
+
+  /* use auto-attach format for section definition. */
+  SEC("uretprobe//proc/self/exe:trigger_func2")
+  int handle_uretprobe_byname(struct pt_regs *ctx)
+  {
+        uretprobe_byname_res =3D 6;
+        return 0;
+  }
+
+The above requires to quote the section name in the output assembly
+file, since otherwise the // in the name would be interpreted by the
+assembler lexer as the beginning of a line comment.
+
+This patch makes the BPF backend to emit quoted section names in
+.section directives if the name requires to be quoted.  Simple section
+names whose constituent characters are in the set [0-9a-zA-Z_] are
+still emitted unquoted.
+
+*** Fix GCC to not emit `exit' instructions in epilogues of naked functions
+
+Jose E. Marchesi
+https://gcc.gnu.org/pipermail/gcc-patches/2024-January/644232.html
+*** memcpy and memmove compiler support
+
+    Link Faust's patch.
+
+*** Define __BPF_CPU_VERSION__ and __BPF_FEATURE_* macros
+*** Remove illegal ldabs and ldind instructions from binutils
+
+Jose E. Marchesi
+https://sourceware.org/pipermail/binutils/2024-January/132216.html
+
+** BPF kernel selftests
+
+At this point, on bpf-next:
+
+- All kernel BPF selftests compile with GCC.
+- Summary: 435/3230 PASSED, 90 SKIPPED, 108 FAILED
+
+Toolchain versions required:
+
+- binutils master, GCC master.
+
+or
+
+- binutils 2.42 + backports
+
+  : bpf: fix calculation when deciding to relax branch
+  : bpf: gas: add missing indcall-badoperand.* test files
+  : bpf: fix bpf expression parsing regression in GAS
+  : bpf: gas: avoid UB in pointer subtraction
+  : objdump, as: add callx support for BPF CPU v1
+  : sim: bpf: remove support for ldinddw and ldabsdw instructions
+  : bpf: there is no ldinddw nor ldabsdw instructions
+
+  binutils 2.43 will come soon in June or July.
+
+- GCC 14.1 + one backport
+
+  : bpf: fix printing of memory operands in pseudoc asm dialect
+
+  We will backport the patch above to releases/gcc-14.  GCC 14.2 can
+  be expected to be released around August.
+
+QUESTION: Time to set up the kernel CI for GCC BPF?
+QUESTION: Do we want test runners BPF_GCC_CPUV4 and BPF_GCC_NOALU32?
+QUESTION: BPF_GCC ?=3D $(shell command -v bpf-unknown-none-gcc;)
+
+** GCC BPF adoption and availability
+
+Software whose BPF components build with GCC BPF:
+
+- systemd
+- dtrace
+- waldo
+
+Distributions shipping GCC BPF:
+
+- Oracle Linux (OL8, OL9 ship GCC and binutils crosses for BPF)
+
+- Debian
+
+  gcc-bpf
+  + bookworm/stable: 12.2.0-14+4
+  + trixie/testing:  14-20240330-1+1
+  + sid/unstable:    14-20240330-1+1
+
+  binutils-bpf
+  + bookworm/stable: 2.40-2+1
+  + trixie/testing:  2.42-4+2
+  + sid/unstable:    2.42-4+2
+
+- Ubuntu
+
+  gcc-bpf
+  + jammy/22.04LTS: 12-20220319-1ubuntu1+2
+  + mantic/23.10:   13.2.0-1ubuntu1+2
+  + noble/24.04LTS: 14-20240330-1ubuntu2+1
+  + oracular:       14-20240330-1ubuntu2+1
+
+  binutils-bpf
+  + jammy/22.04LTS: 2.38-2ubuntu1+3
+  + mantic/23.10:   2.41-1ubuntu1+2
+  + noble/24.04LTS: 2.42-4ubuntu2+2
+  + oracular:       2.42-4ubuntu2+2
+
+- Gentoo (https://github.com/gentoo/gentoo/pull/36632)
+
+Compiler-explorer:
+
+- BPF gcc trunk
+- BPF gcc 14.1.0
+- BPF gcc 13.2.0
+- BPF gcc 13.1.0
+
+* Next work
+** 32-bit sub-register support in BPF assembly language
+
+Availability of 32-bit arithmetic instructions:
+
+  (cpu >=3D v3 AND not disabled with -mno-alu32) OR -malu32
+
+Compiler constraints:
+
+  "r"
+
+     64-bit register (rN) or 32-bit sub-register (wN), based on the mode of
+     the operand.
+
+     If 32-bit arithmetic available
+        char, short -> wN and warning
+        int -> wN
+        long int -> rN
+     Else
+        char, short, int -> rN and warning
+        long int -> rN
+
+  "w"
+
+     32-bit sub-register (wN) regardless of the mode of the operand.
+
+     If 32-bit arithmetic available
+       char, short -> wN and warning
+       int -> wN
+       long int -> wN and warning
+     Else
+       char, short, int, long int -> wN and warning?
+
+  "R"
+
+     64-bit register (rN) regardless of the mode of the operand.
+
+     char, short, int -> rN and warn
+     long int -> rN
+
+Perhaps for instruction immediates:
+
+  "I" imm32
+  "i" imm64
+  "O" off16
+
+  warning if not in range.
+
+QUESTION: are we happy with above semantics / shall we move forward with it?
+
+** BPF memory model
+
+Obey BPF memory model in compiler:
+- Memory barriers.
+- Compiler built-ins.
+
+** maybe-goto
+
+TODO: support
+
+** BTF pruning
+
+GCC BTF for BPF programs (selftests) was huge compared to clang.
+Reason: including kernel headers pulls in thousands of types, many of which
+are not used at all by the program.
+  "many" --> ~90% for average selftest =3D 10x size reduction
+
+clang: limit BTF generation to only what is needed by the program.
+
+Really 2 modes of operation for generating BTF:
+1. BTF for BPF programs - 'used only'
+2. BTF for non-BPF programs (kernel via pahole) - 'all'
+i.e., BTF generated by translating from DWARF is not the same as BTF
+generated directly by compiler with pruning enabled.  This is the source
+of the original difference in GCC vs. clang.
+
+Pruning:
+- No BTF for unused vars, vars which are optimized away, etc.
+- BTF for struct/union types which are only used via pointer-type members
+  of other struct/unions are replaced with a BTF_KIND_FWD, instead of
+  emitting full type information (all members, recursively, etc.)
+
+Add pruning option in GCC:
+ -fprune-btf: emit only BTF used by program, prune everything else like clang
+     Enabled by default for BPF target.
+ -fno-prune-btf: emit "full" BTF, for all types in source, similar to DWARF
+     Old gcc operation.
+     Useful for non-BPF targets which may want to use BTF
+
+Patches sent to gcc-patches last week, pending review
+https://gcc.gnu.org/pipermail/gcc-patches/2024-May/650482.html
+
+QUESTION: Do you plan to add an '-fno-prune-btf' equivalent in clang/LLVM?
+
+** BTF and LTO
+Debug info generation in GCC is split in two parts, 'early_finish' and
+'late_finish' due to LTO.
+
+Emitting BTF at early_finish is problematic:
+- Before optimizations -> will emit VAR and DATASEC entries for variables
+  which are later optimized away
+
+Emitting BTF only at late_finish is problematic:
+- Breaks LTO
+
+There are use cases for -flto and -gbtf in the same build
+- e.g. LTO kernel build with BTF
+
+In either case, need toolchain support to merge/deduplicate BTF at link
+time.
+
+** Support for BTF in the GNU binutils
+Support for dumping BTF in objdump (TODO)
+Support for merging and deduplicating BTF in the linker (TODO)
+
+Currently, the toolchain generates DWARF for the kernel, and in turn
+pahole generates BTF from DWARF:
+
+: make kernel ---> DWARF ---> pahole ---> BTF
+
+#+BEGIN_EXAMPLE
+    +--------+  BTF                  BTF   +----------+
+    | pahole |-------> vmlinux.btf ------->| verifier |
+    +--------+                             +----------+
+        ^                                        ^
+        |                                        |
+  DWARF |                                    BTF |
+        |                                        |
+      vmlinux                              +-------------+
+      module1.ko                           | BPF program |
+      module2.ko                           +-------------+
+        ...
+#+END_EXAMPLE
+
+This introduces the following requirement for BTF:
+
+*All the information expressed in BTF shall be conveyable in standard
+ DWARF or deducible from some source available to pahole*
+
+This is problematic, because:
+
+1. DWARF is difficult to extend without breaking it.
+2. Proper additions to DWARF shall be done through the standard.
+3. The coupling of both formats is gratuitous.
+
+GNU ld already supports merging and deduplicating CTF in the linker;
+support could be extended to merge + deduplicate BTF also.
+
+Then, it may be possible to skip DWARF in the process, and have use
+pahole to simply modify BTF rather than also translating from DWARF, i.e.
+
+: make kernel ---> BTF ---> pahole ---> BTF (+percpu vars, ....)
+
+** Type and declaration tags in BTF and DWARF
+Patches originally sent to gcc-patches last year.
+https://gcc.gnu.org/pipermail/gcc-patches/2023-July/624156.html
+
+Objections from gcc global maintainers: DWARF format
+- inability to share tag DIEs, to a degree
+- bloat
+
+We addressed these concerns, but upstream discussion died without
+approval for DWARF portion of tags.
+
+Due to GCC internals, *must* pass tags through DWARF to correctly support
+type tags and some decl tags in BTF.
+
+TODO: restart discussion with concerns addressed, convince maintainers.
+
+Temporary small patch to support decl_tag on functions as used by selftest
+harness; only BTF (no DWARF)
+- Useful for test harness  (__msg, __failure, __success, etc.)
+- Depends on structural change in -fprune-btf series
+
+*** Reminder: attribute ordering, c2x standard attribute syntax
+: #define __tag1 __attribute__((btf_decl_tag("tag1")))
+: #define __tag2 __attribute__((btf_decl_tag("tag2")))
+:   GCC-BPF  [test_maps] test_btf_decl_tag.bpf.o
+: progs/test_btf_decl_tag.c:36:1: error: attributes should be specified before the declarator in a function definition
+:    36 | static __noinline int foo(int x __tag1 __tag2) __tag1 __tag2
+:       | ^~~~~~
+Works in clang, but not in gcc due to difference in attribute parsing
+
+: #define __tag1 [[gnu::btf_decl_tag("tag1")]]
+: #define __tag2 [[gnu::btf_decl_tag("tag2")]]
+: static __noinline int foo(int x __tag1 __tag2) __tag1 __tag2
+OK, tag1, tag2 apply to function foo
+
+* Other issues/questions
+** GCC BPF maintenance model
+
+BPF introduces some particular requirements on compiler maintenance:
+- New optimizations may "break" existing programs.
+- Even bug fixes may break existing programs.
+
+Goals:
+- Avoid private forks.
+- Avoid having to maintain/package one-toolchain-per-kernel.
+
+Possible solution:
+- Dedicated bpf maintenance branches in GCC and binutils:
+  binutils: binutils-2_42-branch-bpf
+  GCC: releases/gcc-14-bpf
+
+QUESTION: What are the current problems with clang/llvm?
+QUESTION: Ideas on how this can be improved?
+
+** BPF, BTF and non-C languages
+
+   What to do with Rust, C++, etc
+   BPF relies on BTF, that therefore cannot be C specific anymore.
+   This is introducing difficulties in GCC: ICEs in 14.
+
+** ST from immediate to memory
+
+   Is it only in V4 or later?

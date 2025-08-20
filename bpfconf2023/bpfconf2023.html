@@ -1,0 +1,313 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Linux Kernel Developers' bpfconf 2023</title>
+<style>
+.collapsible {
+    background-color: white;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: 2px;
+    text-align: left;
+    outline: none;
+    color: black;
+    text-decoration: none;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.content {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible:after {
+    content: "\02795";
+    font-size: 13px;
+    color: black;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: "\2796";
+}
+
+.speaker {
+    font-size: 11px;
+    color: grey;
+    display: inline;
+    margin-left: 10px;
+}
+</style>
+	</head>
+	 <body bgcolor="#ffffff">
+	  <table border="0" width="850">
+	   <tbody>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td valign="top" align="center" colspan="2">
+	<h1>Linux Kernel Developers' bpfconf 2023</h1><br>
+	<img src="bpfconf2023_material/bpf_logo.png" width="180">
+</td></tr>
+<tr><td><br></td>
+<tr><td><br></td>
+<tr><td></td>
+<td>
+bpfconf is an invitation-only technical workshop run by the Linux
+community in order to bring BPF core developers together, to discuss
+new ideas and to work out improvements to the BPF subsystem
+that will make their way into future mainline kernels and into
+the BPF compiler backends.
+<p>
+The conference is purposely kept small with focus on discussion rather
+than just presentation. Along with the LPC's <a href="https://lore.kernel.org/bpf/1515db2c-f517-76da-8aad-127a67da802f@iogearbox.net/" target="_new">BPF and Networking Track</a>
+which is organized and run by the same community, the goal is to allow
+developers to meet face to face twice per year to exchange and discuss
+ongoing developments in the BPF ecosystem.
+</p><p>
+The 2023 bpfconf edition is a three-days conference which is part of the
+<a href="https://events.linuxfoundation.org/lsfmm/" target="_new">LSF/MM/BPF summit</a>. It is therefore also open to all LSF/MM/BPF attendees.</p>
+
+<h2>Discussion Topics</h2>
+
+<p>The following discussion topics have been brought up at this
+year's bpfconf. In each slot below, there is a short discussion
+topic with a link to the corresponding slides in case slides have
+been used as a discussion starter.
+</p>
+<p>
+Raw (and incomplete) notes for some of the sessions have been collected <a href="bpfconf2023_material/LSFMMBPF_2023_raw_notes.pdf" target="_new">here</a>.
+</p>
+
+<table border = "1" cellpadding="3" cellspacing="1">
+<tr>
+  <th width="250">Name</th>
+  <th width="550">Topic</th>
+</tr>
+<tr>
+  <td>Alexei Starovoitov</td>
+  <td><a href="bpfconf2023_material/bpf_anthem.pdf" target="_new">What should be the anthem of BPF?</a></td>
+</tr>
+<tr>
+  <td>Jose E. Marchesi et al.</td>
+  <td><a href="bpfconf2023_material/compiled_bpf.txt" target="_new">Compiled BPF</a></td>
+</tr>
+<tr>
+  <td>David Marchevsky</td>
+  <td><a href="bpfconf2023_material/BPF-Graph-Collections-Verifier-Changes.pdf" target="_new">BPF Data Structures and the necessary verifier changes</a></td>
+</tr>
+<tr>
+  <td>David Marchevsky</td>
+  <td><a href="bpfconf2023_material/Unifying_kfunc_and_helper_defs.pdf" target="_new">Verifier refactoring, specifically unifying kfunc + helper checking</a></td>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2023_material/dvernet_multi_kfunc_sets_scoping_kfuncs.pdf" target="_new">Scoping kfuncs to specific BPF struct_ops operations</a></td>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2023_material/dvernet_local_storage_mapping.pdf" target="_new">Allowing user space to map entries in local storage map types</a></td>
+</tr>
+<tr>
+  <td>Andrii Nakryiko</td>
+  <td><a href="bpfconf2023_material/Trusted_unprivileged_BPF_LSFMM2023.pdf" target="_new">Resurrection of /dev/bpf discussion for implementing trusted unpriv BPF</a></td>
+</tr>
+<tr>
+  <td>Jiri Olsa</td>
+  <td><a href="bpfconf2023_material/btf-func-resolve.pdf" target="_new">BTF function/address resolving</a></td>
+</tr>
+<tr>
+  <td>Anton Protopopov</td>
+  <td><a href="bpfconf2023_material/anton-protopopov-lsf-mm-bpf-2023.pdf" target="_new">BPF Static Keys Support</a></td>
+</tr>
+<tr>
+  <td>Anton Protopopov</td>
+  <td><a href="bpfconf2023_material/anton-protopopov-lsf-mm-bpf-2023.pdf" target="_new">Update on wildcard map including use cases and restrictions</a></td>
+</tr>
+<tr>
+  <td>Song Liu</td>
+  <td><a href="bpfconf2023_material/From-bpf_prog_pack-to-new-module_alloc.pdf" target="_new">Update on the new module_alloc</a></td>
+</tr>
+<tr>
+  <td>Hou Tao</td>
+  <td><a href="bpfconf2023_material/bpf_memory_allocator.pdf" target="_new">Make bpf memory allocator more robust</a></td>
+</tr>
+<tr>
+  <td>Kornilios Kourtis</td>
+  <td><a href="bpfconf2023_material/a-sketch-data-structure-for-quantiles-in-BPF.pdf" target="_new">A sketch data-structure for quantiles in eBPF</a></td>
+</tr>
+<tr>
+  <td>Daniel Mueller</td>
+  <td><a href="bpfconf2023_material/daniel_mueller_-_batteries-included_symbolization_with_blazesym.pdf" target="_new">Batteries-included symbolization with blazesym</a></td>
+</tr>
+<tr>
+  <td>Daniel Borkmann</td>
+  <td><a href="bpfconf2023_material/tcx_meta_netdev_borkmann.pdf" target="_new">Generic BPF multi-attach API & initial implementation for tcx and XDP</a></td>
+</tr>
+<tr>
+  <td>Daniel Borkmann</td>
+  <td><a href="bpfconf2023_material/tcx_meta_netdev_borkmann.pdf" target="_new">meta netdevices for BPF</a></td>
+</tr>
+<tr>
+  <td>Stanislav Fomichev</td>
+  <td><a href="bpfconf2023_material/sdf-xdp-metadata.pdf" target="_new">XDP metadata for TX</a></td>
+</tr>
+<tr>
+  <td>Zhu Yanjun</td>
+  <td><a href="bpfconf2023_material/XDP_With_RDMA.pdf" target="_new">XDP/BPF in RDMA(RXE)</a></td>
+</tr>
+<tr>
+  <td>Anton Protopopov</td>
+  <td><a href="bpfconf2023_material/anton-protopopov-lsf-mm-bpf-2023.pdf" target="_new">Better hash functions for BPF maps</a></td>
+</tr>
+<tr>
+  <td>Aditi Ghag</td>
+  <td><a href="bpfconf2023_material/aditi-bpf-sockets-iterator.pdf" target="_new">Namespace unaware BPF (sockets) iterator</a></td>
+</tr>
+<tr>
+  <td>Aditi Ghag</td>
+  <td><a href="bpfconf2023_material/aditi-BPF-cgroup-enhancements.pdf" target="_new">BPF cgroup helper enhancements for Kubernetes like environments</a></td>
+</tr>
+<tr>
+  <td>Quentin Deslandes</td>
+  <td><a href="bpfconf2023_material/bpfilter.pdf" target="_new">BPF and firewall: kernel support to ease more complex packets filtering</a></td>
+</tr>
+<tr>
+  <td>Hao Luo et al.</td>
+  <td><a href="bpfconf2023_material/haoluo_chrisli_debugging_lock_performance.pdf" target="_new">Kernel lock performance analysis using BPF</a></td>
+</tr>
+<tr>
+  <td>Jiri Olsa</td>
+  <td><a href="bpfconf2023_material/uprobe_multi.pdf" target="_new">Multi uprobe link</a></td>
+</tr>
+<tr>
+  <td>Martin Lau</td>
+  <td><a href="bpfconf2023_material/cgroup-bpf-production-surprises.pdf" target="_new">cgroup-bpf production surprises</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td><a href="bpfconf2023_material/XDPnotCNI.pdf" target="_new">Monitoring SRIOV with BPF</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td><a href="bpfconf2023_material/Turing_Complete_EBPF.pdf" target="_new">BPF Turing machine</a></td>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2023_material/dvernet_sched_ext.pdf" target="_new">sched_ext</a></td>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2023_material/dvernet_per_arg_kfunc_flags.pdf" target="_new">Per-arg kfunc flags</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td><a href="bpfconf2023_material/LSFMM_Tetragon.pdf" target="_new">Tetragon a k8s observability and security tool</a></td>
+</tr>
+<tr>
+  <td>Lorenz Bauer</td>
+  <td><a href="bpfconf2023_material/Lorenz_Bauer_-_BPF_signing_using_fsverity_and_LSM_gatekeeper.pdf" target="_new">BPF signing using fsverity and LSM gatekeeper</a></td>
+</tr>
+<tr>
+  <td>Dave Thaler</td>
+  <td><a href="bpfconf2023_material/eBPF-and-Confidential-Computing-lsfmmbpf.pdf" target="_new">Applicability of BPF in a Confidential Computing context</a></td>
+</tr>
+<tr>
+  <td>Daniel Xu</td>
+  <td><a href="bpfconf2023_material/dxu-vmtest.pdf" target="_new">vmtest: reusable virtual machine testing infrastructure</a></td>
+</tr>
+<tr>
+  <td>Mykola Lysenko</td>
+  <td><a href="bpfconf2023_material/bpf_ci.jpg" target="_new">BPF CI tutorial</a></td>
+</tr>
+<tr>
+  <td>Manu Bretelle et al.</td>
+  <td><a href="bpfconf2023_material/BPF_CI_a_year_later.pdf" target="_new">BPF CI system discussion</a></td>
+</tr>
+<tr>
+  <td>Vinay Kulkami</td>
+  <td><a href="bpfconf2023_material/libbpf-k8s-extensions.pdf" target="_new">Extend bpf-helpers to better support Kubernetes</a></td>
+</tr>
+<tr>
+  <td>Hou Tao</td>
+  <td><a href="bpfconf2023_material/bpf-fs-iterator.pdf" target="_new">BPF iterator for file-system</a></td>
+</tr>
+<tr>
+  <td>Daniel Rosenberg</td>
+  <td><a href="bpfconf2023_material/Fuse-BPF-LSFMMBPF-Presentation.pdf" target="_new">FUSE BPF</a></td>
+</tr>
+<tr>
+  <td>Dave Thaler</td>
+  <td><a href="bpfconf2023_material/bpf-standardization-lsfmmbpf.pdf" target="_new">BPF documentation/standardization progress</a></td>
+</tr>
+</table>
+
+<h2>Conference Info</h2>
+
+<table border = "0" cellpadding="3" cellspacing="1" width="100%">
+  <tr><td><b>Location:</b></td><td>Vancouver, British Columbia, Canada, part of LSF/MM/BPF</td></tr>
+  <tr><td><b>Committee:</b></td><td>Daniel Borkmann, Martin Lau</td></tr>
+  <tr><td><b>Date:</b></td><td>May 8 - May 10, 2023</td></tr>
+  <tr><td></td><td><a href="https://docs.google.com/spreadsheets/d/1tIDYHgLhhcetoXtgyvcoM6YZWWHcVLdNYipBq2dH-_k/edit#gid=0" target="_new">Schedule</a></td></tr>
+  <tr><td><b>Attendees</b> (by invitation only)<b>:</b></td><td></td></tr>
+  <tr><td></td><td>Alexei Starovoitov (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Daniel Borkmann (BPF maintainer, Isovalent)</td></tr>
+  <tr><td></td><td>Andrii Nakryiko (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Martin Lau (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Aditi Ghag (Isovalent)</td></tr>
+  <tr><td></td><td>Anita Zhang (Meta)</td></tr>
+  <tr><td></td><td>Anton Protopopov (Isovalent)</td></tr>
+  <tr><td></td><td>Brendan Gregg (Intel)</td></tr>
+  <tr><td></td><td>Chris Li (Google)</td></tr>
+  <tr><td></td><td>Daniel Mueller (Meta)</td></tr>
+  <tr><td></td><td>Daniel Xu (Aviatrix)</td></tr>
+  <tr><td></td><td>Dave Thaler (Microsoft)</td></tr>
+  <tr><td></td><td>David Faust (Oracle)</td></tr>
+  <tr><td></td><td>David Marchevsky (Meta)</td></tr>
+  <tr><td></td><td>David Vernet (Meta)</td></tr>
+  <tr><td></td><td>Hao Luo (Google)</td></tr>
+  <tr><td></td><td>Hou Tao (Huawei)</td></tr>
+  <tr><td></td><td>Indu Bhagat (Oracle)</td></tr>
+  <tr><td></td><td>Jesper Brouer (Red Hat)</td></tr>
+  <tr><td></td><td>Jiri Olsa (Isovalent)</td></tr>
+  <tr><td></td><td>Joe Stringer (Isovalent)</td></tr>
+  <tr><td></td><td>John Fastabend (Isovalent)</td></tr>
+  <tr><td></td><td>Jose E. Marchesi (Oracle)</td></tr>
+  <tr><td></td><td>Kornilios Kourtis (Isovalent)</td></tr>
+  <tr><td></td><td>KP Singh (Google)</td></tr>
+  <tr><td></td><td>Kui-Feng Lee (Meta)</td></tr>
+  <tr><td></td><td>Lorenz Bauer (Isovalent)</td></tr>
+  <tr><td></td><td>Manu Bretelle (Meta)</td></tr>
+  <tr><td></td><td>Mykola Lysenko (Meta)</td></tr>
+  <tr><td></td><td>Nikolay Aleksandrov (Isovalent)</td></tr>
+  <tr><td></td><td>Nikolay Yurin (Meta)</td></tr>
+  <tr><td></td><td>Quentin Deslandes (Meta)</td></tr>
+  <tr><td></td><td>Sargun Dhillon (Meta)</td></tr>
+  <tr><td></td><td>Song Liu (Meta)</td></tr>
+  <tr><td></td><td>Stanislav Fomichev (Google)</td></tr>
+  <tr><td></td><td>Timo Beckers (Isovalent)</td></tr>
+  <tr><td></td><td>Toke Høiland-Jørgensen (Red Hat)</td></tr>
+  <tr><td></td><td>Vinay Kulkarni (Huawei)</td></tr>
+  <tr><td></td><td>Yonghong Song (Meta)</td></tr>
+  <tr><td></td><td>Zhu Yanjun (Intel)</td></tr>
+  <tr><td></td><td>... as well as other attendees from LSF/MM</td></tr>
+</table>
+</p>
+<h2>Group Photo, Attendees</h2>
+<p><center><img src="bpfconf2023_material/group.jpg" width="800">
+<small><br>Left to right, back: John Fastabend, Dave Thaler, Daniel Borkmann, Mykola Lysenko, Daniel Rosenberg, David Marchevsky, Yonghong Song, Daniel Xu, Kornilios Kourtis, David Vernet</small>
+<small><br>Left to right, middle: Jiri Olsa, Andrii Nakryiko, Joe Stringer, Anton Protopopov, Martin Lau, Alexei Starovoitov, Aditi Ghag, Paul Lawrence, Hao Luo, Kui-Feng Lee, Quentin Deslandes, Anita Zhang</small>
+<small><br>Left to right, front: Song Liu, Stanislav Fomichev, Steven Rostedt, Manu Bretelle, Daniel Mueller, Sargun Dhillon, Vinay Kulkarni</small>
+<br><br><div align="right">(Photo by Linux Foundation)</div></center></p>
+<p><center><img src="bpfconf2023_material/group_2.jpg" width="800"><br><br><div align="right">(Photo by Daniel Borkmann)</div></center></p>
+<h2>Past Events</h2>
+<ul>
+ <li><a href="/bpfconf2022/bpfconf2022.html">bpfconf 2022</a></li>
+ <li>bpfconf 2020/2021 (cancelled due to COVID restrictions)</li>
+ <li><a href="/bpfconf2019/bpfconf2019.htmlx">bpfconf 2019</a></li>
+</ul>
+
+</li></td></tr>
+</tbody></table>
+</body></html>

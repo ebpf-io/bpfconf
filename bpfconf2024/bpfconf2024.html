@@ -1,0 +1,279 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Linux Kernel Developers' bpfconf 2024</title>
+<style>
+.collapsible {
+    background-color: white;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: 2px;
+    text-align: left;
+    outline: none;
+    color: black;
+    text-decoration: none;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.content {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible:after {
+    content: "\02795";
+    font-size: 13px;
+    color: black;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: "\2796";
+}
+
+.speaker {
+    font-size: 11px;
+    color: grey;
+    display: inline;
+    margin-left: 10px;
+}
+</style>
+	</head>
+	 <body bgcolor="#ffffff">
+	  <table border="0" width="850">
+	   <tbody>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td valign="top" align="center" colspan="2">
+	<h1>Linux Kernel Developers' bpfconf 2024</h1><br>
+	<img src="bpfconf2024_material/bpf_logo.png" width="180">
+</td></tr>
+<tr><td><br></td>
+<tr><td><br></td>
+<tr><td></td>
+<td>
+bpfconf is an invitation-only technical workshop run by the Linux
+community in order to bring BPF core developers together, to discuss
+new ideas and to work out improvements to the BPF subsystem
+that will make their way into future mainline kernels and into
+the BPF compiler backends.
+<p>
+The conference is purposely kept small with focus on discussion rather
+than just presentation. Along with the LPC's <a href="https://lore.kernel.org/bpf/63792467-9be4-0d84-8fd1-93f63bcee3d9@iogearbox.net/" target="_new">BPF Track</a>
+which is organized and run by the same community, the goal is to allow
+developers to meet face to face twice per year to exchange and discuss
+ongoing developments in the BPF ecosystem.
+</p><p>
+The 2024 bpfconf edition is a three-days conference which is part of the
+<a href="https://events.linuxfoundation.org/lsfmm/" target="_new">LSF/MM/BPF summit</a>. It is therefore also open to all LSF/MM/BPF attendees.</p>
+
+<h2>Discussion Topics</h2>
+
+<p>The following discussion topics have been brought up at this
+year's bpfconf. In each slot below, there is a short discussion
+topic with a link to the corresponding slides in case slides have
+been used as a discussion starter.
+</p>
+<p>
+LWN coverage of the BPF track from Daroc Alden can be found <a href="https://lwn.net/Articles/lsfmmbpf2024/" target="_new">here</a>.
+Raw (and incomplete) notes for some of the sessions have been collected by participants <a href="bpfconf2024_material/LSFMMBPF_2024_raw_notes.pdf" target="_new">here</a>.
+</p>
+
+<table border = "1" cellpadding="3" cellspacing="1">
+<tr>
+  <th width="250">Name</th>
+  <th width="550">Topic</th>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2024_material/Polymorphic_Kfuncs_-_Context-aware_kfunc_relocations.pdf" target="_new">Polymorphic kfuncs</a></td>
+</tr>
+<tr>
+  <td>Vineeth Pillai</td>
+  <td><a href="bpfconf2024_material/paravirt_sched_lsfmm.pdf" target="_new">KVM vCPU Priority boosting via BPF</a></td>
+</tr>
+<tr>
+  <td>David Vernet</td>
+  <td><a href="bpfconf2024_material/Sched_Ext_-_What_s_New_&amp;_What_s_Missing.pdf" target="_new">More features and use-cases for sched_ext</a></td>
+</tr>
+<tr>
+  <td>Kui-Feng Lee</td>
+  <td><a href="bpfconf2024_material/struct_ops-lsfmmbpf-2024.pdf" target="_new">BPF struct_ops & sched_ext</a></td>
+</tr>
+<tr>
+  <td>Alan Jowett</td>
+  <td><a href="bpfconf2024_material/LLVM_Code_generation.pdf" target="_new">LLVM improvements for better verification</a></td>
+</tr>
+<tr>
+  <td>Jose E. Marchesi and David Faust</td>
+  <td><a href="bpfconf2024_material/compiled_bpf.txt" target="_new">Compiled BPF</a></td>
+</tr>
+<tr>
+  <td>Dave Thaler</td>
+  <td><a href="bpfconf2024_material/BPF_compiler_issues.pdf" target="_new">Cross-platform BPF compiler issues</a></td>
+</tr>
+<tr>
+  <td>Paul E. McKenney</td>
+  <td><a href="bpfconf2024_material/bpfmemmodel.2024.05.13c.pdf" target="_new">Instruction-level BPF memory model</a></td>
+</tr>
+<tr>
+  <td>Alan Jowett</td>
+  <td><a href="bpfconf2024_material/BPF_Performance.pdf" target="_new">BPF performance: comparison of eBPF for Windows vs Linux BPF</a></td>
+</tr>
+<tr>
+  <td>Alexei Starovoitov</td>
+  <td><a href="bpfconf2024_material/modernize_bpf.pdf" target="_new">Modernize BPF for the next 10 years</a></td>
+</tr>
+<tr>
+  <td>KP Singh</td>
+  <td><a href="bpfconf2024_material/BPF_LSM_2024.pdf" target="_new">Next Steps for BPF LSM</a></td>
+</tr>
+<tr>
+  <td>John Fastabend</td>
+  <td><a href="bpfconf2024_material/Tetragon_2024.pdf" target="_new">Tetragon auditing/enforcement</a></td>
+</tr>
+<tr>
+  <td>Maxwell Bland</td>
+  <td><a href="bpfconf2024_material/BPF-NX+CFI.pdf" target="_new">BPF-NX+CFI</a></td>
+</tr>
+<tr>
+  <td>Neill Kapron</td>
+  <td><a href="bpfconf2024_material/LSFMMBPF24_kapron_verified_boot.pdf" target="_new">Implementing BPF_PROG_LOAD_FD</a></td>
+</tr>
+<tr>
+  <td>Yonghong Song</td>
+  <td><a href="bpfconf2024_material/bpf_shadow_stack.pdf" target="_new">Segmented Stacks for BPF Programs</a></td>
+</tr>
+<tr>
+  <td>Shung-Hsi Yu</td>
+  <td><a href="bpfconf2024_material/Value_tracking_in_BPF_verifier.pdf" target="_new">Value tracking in BPF verifier</a></td>
+</tr>
+<tr>
+  <td>Anton Protopopov</td>
+  <td><a href="bpfconf2024_material/bpf_static_keys.pdf" target="_new">Static keys and jump labels</a></td>
+</tr>
+<tr>
+  <td>Manu Bretelle</td>
+  <td><a href="bpfconf2024_material/BPF-CI.pdf" target="_new">BPF CI in particular and kernel testing in general</a></td>
+</tr>
+<tr>
+  <td>Manu Bretelle</td>
+  <td><a href="bpfconf2024_material/BPF-dev-hacks.pdf" target="_new">BPF local testing</a></td>
+</tr>
+<tr>
+  <td>Alan Jowett</td>
+  <td><a href="bpfconf2024_material/BPF_Conformance.pdf" target="_new">BPF conformance - handling undefined opcodes</a></td>
+</tr>
+<tr>
+  <td>Jiri Olsa</td>
+  <td><a href="bpfconf2024_material/kprobe_multi.pdf" target="_new">Multi-kprobe Updates</a></td>
+</tr>
+<tr>
+  <td>Jiri Olsa</td>
+  <td><a href="bpfconf2024_material/uprobes.pdf" target="_new">Fast uprobes</a></td>
+</tr>
+<tr>
+  <td>Andrii Nakryiko</td>
+  <td><a href="bpfconf2024_material/Evolution_of_stack_trace_capture_with_BPF_LSF_MM_BPF_2024.pdf" target="_new">Evolution of stack trace captures with BPF</a></td>
+</tr>
+<tr>
+  <td>Namhyung Kim</td>
+  <td><a href="bpfconf2024_material/perf-tool-BPF-issues.pdf" target="_new">perf tools issues with BPF</a></td>
+</tr>
+<tr>
+  <td>Arnaldo Carvalho de Melo</td>
+  <td><a href="bpfconf2024_material/lsfmm+bpf-2024-pahole-btf+data-type-profiling-update.pdf" target="_new">perf data type profiling and pahole update</a></td>
+</tr>
+<tr>
+  <td>Aditi Ghag</td>
+  <td><a href="bpfconf2024_material/Rethinking_BPF_conntrack.pdf" target="_new">Rethinking BPF conntrack</a></td>
+</tr>
+<tr>
+  <td>Amery Hung</td>
+  <td><a href="bpfconf2024_material/BPF-Qdisc.pdf" target="_new">BPF Qdisc</a></td>
+</tr>
+<tr>
+  <td>David Wei</td>
+  <td><a href="bpfconf2024_material/Thrift_RPC_parsing_using_BPF.pdf" target="_new">BPF Thrift Coalescing</a></td>
+</tr>
+<tr>
+  <td>Daniel Borkmann</td>
+  <td><a href="bpfconf2024_material/tcx_netkit_update_and_global_sk_iter.pdf" target="_new">Revamping global socket iterator, netkit & next steps</a></td>
+</tr>
+<tr>
+  <td>Dave Thaler</td>
+  <td><a href="bpfconf2024_material/BPF-IETF-status.pdf" target="_new">BPF IETF standardization update & roadmap</a></td>
+</tr>
+<tr>
+  <td>Joe Stringer et al.</td>
+  <td><a href="bpfconf2024_material/eBPF_Foundation.pdf" target="_new">eBPF Foundation: ongoing work &
+"What can the foundation do for you?"</a></td>
+</tr>
+</table>
+
+<h2>Conference Info</h2>
+
+<table border = "0" cellpadding="3" cellspacing="1" width="100%">
+  <tr><td><b>Location:</b></td><td>Salt Lake City, Utah, USA, part of LSF/MM/BPF</td></tr>
+  <tr><td><b>Committee:</b></td><td>Daniel Borkmann, Martin Lau</td></tr>
+  <tr><td><b>Date:</b></td><td>May 13 - May 15, 2024</td></tr>
+  <tr><td></td><td><a href="https://docs.google.com/spreadsheets/d/176LXLys9Uh6A-Eal2flrzcbUSJMUXGkGwyihr9jAAaQ/edit#gid=0" target="_new">Schedule</a></td></tr>
+  <tr><td><b>Attendees</b> (by invitation only)<b>:</b></td><td></td></tr>
+  <tr><td></td><td>Alexei Starovoitov (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Daniel Borkmann (BPF maintainer, Isovalent)</td></tr>
+  <tr><td></td><td>Andrii Nakryiko (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Martin Lau (BPF maintainer, Meta)</td></tr>
+  <tr><td></td><td>Aditi Ghag (Isovalent)</td></tr>
+  <tr><td></td><td>Alan Jowett (Microsoft)</td></tr>
+  <tr><td></td><td>Amery Hung (ByteDance)</td></tr>
+  <tr><td></td><td>Anton Protopopov (Isovalent)</td></tr>
+  <tr><td></td><td>Arnaldo Carvalho de Melo (Red Hat)</td></tr>
+  <tr><td></td><td>Brendan Gregg (Intel)</td></tr>
+  <tr><td></td><td>Daniel Mueller (Meta)</td></tr>
+  <tr><td></td><td>Dan Kelley (Meta)</td></tr>
+  <tr><td></td><td>Dave Thaler (Freelance)</td></tr>
+  <tr><td></td><td>David Faust (Oracle)</td></tr>
+  <tr><td></td><td>David Vernet (Meta)</td></tr>
+  <tr><td></td><td>David Wei (Meta)</td></tr>
+  <tr><td></td><td>Eduard Zingerman (Meta)</td></tr>
+  <tr><td></td><td>Jiri Olsa (Isovalent)</td></tr>
+  <tr><td></td><td>Joe Stringer (Isovalent)</td></tr>
+  <tr><td></td><td>Jordan Rome (Meta)</td></tr>
+  <tr><td></td><td>John Fastabend (Isovalent)</td></tr>
+  <tr><td></td><td>Jose E. Marchesi (Oracle)</td></tr>
+  <tr><td></td><td>KP Singh (Google)</td></tr>
+  <tr><td></td><td>Kui-Feng Lee (Meta)</td></tr>
+  <tr><td></td><td>Kumar Kartikeya Dwivedi (EPFL)</td></tr>
+  <tr><td></td><td>Manu Bretelle (Meta)</td></tr>
+  <tr><td></td><td>Maxwell Bland (Motorola)</td></tr>
+  <tr><td></td><td>Mykola Lysenko (Meta)</td></tr>
+  <tr><td></td><td>Namhyung Kim (Google)</td></tr>
+  <tr><td></td><td>Neill Kapron (Google)</td></tr>
+  <tr><td></td><td>Nikolay Yurin (Meta)</td></tr>
+  <tr><td></td><td>Paul E. McKenney (Meta)</td></tr>
+  <tr><td></td><td>Shung-Hsi Yu (SUSE)</td></tr>
+  <tr><td></td><td>Song Liu (Meta)</td></tr>
+  <tr><td></td><td>Stanislav Fomichev (Google)</td></tr>
+  <tr><td></td><td>Vadim Fedorenko (Meta)</td></tr>
+  <tr><td></td><td>Vineeth Pillai (Google)</td></tr>
+  <tr><td></td><td>Yonghong Song (Meta)</td></tr>
+  <tr><td></td><td>... as well as other attendees from LSF/MM tracks</td></tr>
+</table>
+</p>
+<h2>Photos Attendees</h2>
+<p><img src="bpfconf2024_material/bpfconf1.jpeg" width="800"><br><br>
+	   <img src="bpfconf2024_material/bpfconf2.jpeg" width="400">
+           <div align="left">(Photos by Daniel Borkmann)</div></p>
+<h2>Past Events</h2>
+<ul>
+ <li><a href="/bpfconf2023/bpfconf2023.html">bpfconf 2023</a></li>
+ <li><a href="/bpfconf2022/bpfconf2022.html">bpfconf 2022</a></li>
+ <li>bpfconf 2020/2021 (cancelled due to COVID restrictions)</li>
+ <li><a href="/bpfconf2019/bpfconf2019.html">bpfconf 2019</a></li>
+</ul>
+
+</li></td></tr>
+</tbody></table>
+</body></html>

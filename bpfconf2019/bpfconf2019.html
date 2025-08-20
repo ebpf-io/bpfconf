@@ -1,0 +1,809 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+		<title>Linux Kernel Developers' bpfconf 2019</title>
+<style>
+.collapsible {
+    background-color: white;
+    cursor: pointer;
+    padding: 10px;
+    width: 100%;
+    border: 2px;
+    text-align: left;
+    outline: none;
+    color: black;
+    text-decoration: none;
+    font-size: inherit;
+    font-family: inherit;
+}
+
+.content {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+}
+
+.collapsible:after {
+    content: "\02795";
+    font-size: 13px;
+    color: black;
+    float: right;
+    margin-left: 5px;
+}
+
+.active:after {
+    content: "\2796";
+}
+
+.speaker {
+    font-size: 11px;
+    color: grey;
+    display: inline;
+    margin-left: 10px;
+}
+</style>
+	</head>
+	 <body bgcolor="#ffffff">
+	  <table border="0" width="850">
+	   <tbody>
+	   <tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td valign="top" align="center" colspan="2">
+	<h1>Linux Kernel Developers' bpfconf 2019</h1><img src="bpfconf2019_talks/bpf_logo.png" width="200" ><p></p>
+</td></tr>
+<tr><td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+<td>
+bpfconf is an invitation-only technical workshop run by the Linux
+community in order to bring BPF core developers together, to discuss
+new ideas and to work out improvements to the Linux BPF subsystem
+that will make their way into future mainline kernels and into the
+LLVM BPF backend.
+<p>
+The conference is purposely kept small with focus on discussion rather
+than presentation. Along with the LPC's <a href="http://vger.kernel.org/lpc-bpf.html" target="_new">BPF micro-conference</a>
+which is organized and run by the same community, the goal is to allow
+developers to meet face to face twice per year to exchange and discuss
+ongoing kernel developments.
+</p><p>
+The 2019 bpfconf edition is a three-days conference co-located with the
+<a href="https://events.linuxfoundation.org/events/linux-storage-filesystem-mm-summit-2019/" target="_new">LSF/MM summit</a>. It is therefore also open to all LSF/MM attendees.</p>
+
+<h2>Discussion Topics</h2>
+
+<p>The following discussion topics have been brought up at this
+year's bpfconf. A raw collection of topics can be found in the
+conf's <a href="https://paste.fedoraproject.org/paste/QtNsWd~4OX9vSLGemFXuDg/raw" target="_new">Etherpad</a>.
+</p><p>
+In each slot below, there is a short discussion intro with a link
+to the corresponding slides (in case slides have been used as a
+discussion starter), as well as a discussion summary write-up.
+The latter may not be available for every topic.
+</p>
+
+<table border = "1" cellpadding="3" cellspacing="1" width="100%">
+
+<tr><td>
+<a name="session-1"></a>
+<button class="collapsible">Scaling the BPF verifier</button>
+<div class="content" id="session-1__">
+  <p>
+  <p><b>Intro:</b> <a href="https://docs.google.com/presentation/d/1oaSa_dlInrTKMzP9_fYgLHN_I5j8pDrD0j3Y93inWiQ/edit#slide=id.g58e9ace034_0_0" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+Jakub Kicinski described recent work on speeding up the BPF verifier, the key component of the BPF subsystem responsible for guaranteeing program safety. The verification algorithm walks all execution paths checking for incorrect behavior. Since full path exploration is expensive the verifier keeps track of execution states of successfully verified paths, and if any path reaches execution state equivalent to a verified one - further walk can be pruned.
+  </p><p>
+Pruning process had been very well tuned and provides significant reduction in the number of instructions the verifier has to check. Unfortunately, pruning comes at a cost - verifier has to frequently record safe states, and compare current state to those already seen. Recent patch series from Alexei Starovoitov achieved a 10 times speed up of the verification process by heuristically removing the states which do not appear to be helpful for pruning from the explored lists. The already verified states are "forgotten" if their pruning success rate is roughly lower than one in three attempts. Alexei’s patches have also optimized the register liveness tracking.
+  </p><p>
+Removing states unhelpful for pruning increases the number of walked instructions but such cost is insignificant compared to the savings in the state-compare function. According to Jakub, even if unhelpful states are freed early the mere need to clone and free the states amounts to over 25% of verification time. To avoid that a better heuristic is needed - this time for choosing the pruning points. Currently the verifier attempts pruning around jump instructions and calls. Because pruning happens on both sides of the branch in a representative sample of networking BPF programs a pruning point is inserted roughly every 4 instructions and 80% of the pruning points will never prune the search. No appealing heuristic is apparent at this time, Jakub reported that simply inserting pruning points on every 10th instruction performs measurably better than jump-instruction-only method. Daniel Borkmann suggested exploring the idea of removing pruning points at verifier runtime, after they start to accumulate only misses.
+  </p><p>
+Another small optimization discussed centered around the idea of attempting to prune jumps without fully forking - in half of analyzed cases one side of the branch gets pruned immediately after the jump, therefore duplicating the verifier state to follow fall through case and then jump taken case should not be necessary.
+  </p><p>
+Recent addition of BPF to BPF calls opens up the possibility of another optimization - which can be roughly dubbed "pure function detection". Path pruning requires that the verifier explores a path fully before using its states for pruning (the liveness propagation needs to be complete before state is used). This happens naturally given that no loops are currently allowed. BPF to BPF calls, however, open a possibility of the same instructions being walked multiple times on one path - calling the same function twice on a path is very much allowed. In such case the second invocation will see pruning state from the first one, but the entire path has not been walked, yet. To avoid false-positive pruning, the verifier scopes pruning to call sites. If the function is a pure function and always returns the same value range (as used for further verification) the verifier could skip looking into the function regardless of the call site. (For BPF the definition of pure could be relaxed to a function not modifying any state that verifier tracks, e.g. changing map or packet data could be allowed).
+  </p><p>
+Last idea presented, inspired by earlier talk about bounded loop verification, was inserting verification hints. User space providing hints to the verifier is generally considered a bad idea, because the user space input should not be trusted in the first space. The idea, however, was for user to suggest verifier loses some of the information it tracks to aid pruning if the BPF author knows precision is not needed. When the program loads a constant the verifier will walk the path with the exact value of the constant. Walks with different constants cannot be pruned. If the user could, however, tell the verifier that even though the loaded value is a constant, the verification should proceed as if it was a value range the pruning would become much more effective. The reception of the idea was mixed, with some concerns of user unfriendliness being raised.
+  </p><p>
+At the end of the talk the group looked at the challenges ahead scaling the verifier to handle 1 million instructions. Recently (after his aforementioned optimizations) Alexei increased the maximum number of instructions walked during verification to 1 million. Root users in the upcoming Linux 5.2 release will not be bound by the old limit of 4096 instructions. Apart from optimizing the verifier there are some additional challenges for creating very long programs. Existing jump instructions use a signed 16 bit value as the offset. Similar to some hardware architectures BPF will likely gain an unconditional jump with a large 32 bit offset in the near future. Performing instruction rewrites becomes an issue with large programs as well, because the instructions are held in an array, making inserting and removing code fairly expensive.
+  </p><p>
+Last but not least the topic of bounding the execution time of BPF programs has been discussed. Without loops the number of instructions walked during verification is always larger than the longest path, providing an implicit cap. Both pure function detection and bounded loop support will require the verifier to start accounting for extra instructions, even though it may not have had to walk them itself.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-1">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-2"></a>
+<button class="collapsible">BPF CO-RE (Compile Once - Run Everywhere)</button>
+<div class="content" id="session-2__">
+  <p>
+  <p><b>Intro:</b> <a href="bpfconf2019_talks/bpf-core.pdf" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+BPF CO-RE talk discussed issues that developers currently run into
+when developing, testing, deploying, and running BPF applications at
+scale, taking Facebook's experience as an example. Today, most types
+of BPF programs access internal kernel structures, which necessitates
+the need to compile BPF program's C code "on the fly" on every single
+production machine due to changing struct/union layouts and
+definitions inside kernel. This causes many problems and
+inconveniences, starting from the need to have kernel sources
+available everywhere and in sync with running kernel, which is a
+hassle to set up and maintain. Reliance on embedded LLVM/Clang for
+compilation means big application binary size, increased memory usage,
+and some rare, but impactful production issues due to increased
+resource usage due to compilation. With current approach testing BPF
+programs against multitude of production kernels is a stressful,
+time-consuming, and error-prone process. The goal of BPF CO-RE is to
+solve all of those issues and move BPF app development flow closer to
+typical experience, one would expect when developing applications:
+compile BPF code once and distribute it as a binary. Having a good way
+to validate that BPF application will run without issues on all active
+kernels is also a must.
+<p></p>
+The complexity hides in the need to adjust compiled BPF assembly code
+to every specific kernel in production, as memory layout of kernel
+data structures changes between kernel versions and even different
+kernel build configurations. BPF CO-RE solution relies on
+self-describing kernel providing BTF type information and layout
+(ability to produce it was recently committed upstream). With the help
+from Clang compiler emitting special relocations during BPF
+compilation and with libbpf as a dynamic loader, it's possible to
+reconciliate correct field offsets just before loading BPF program
+into kernel. As BPF programs are often required to work without
+modification (i.e., re-compilation) on multiple kernel
+versions/configurations with incompatible internal changes, there is a
+way to specify conditional BPF logic based on actual kernel version
+and configuration, also using relocations emitted from Clang. Not
+having to rely on kernel headers significantly improves the testing
+story and makes it possible to have a good tooling support to do
+pre-validation before deploying to production.
+<p></p>
+There are still issues which will have to be worked around for now.
+There is currently no good way to extract #define macro from kernel,
+so this has to be dealt with by copy/pasting the necessary definitions
+manually. Code directly relying on size of structs/unions has to be
+avoided as well, as it isn't relocatable in general case. While there
+are some raw ideas how to solve issues like that in the future, BPF
+CO-RE developers prioritize providing basic mechanisms to allow
+"Compile Once - Run Everywhere" approach and significantly improve
+testing and pre-validation experience through better tooling, enabled
+by BPF CO-RE. As existing applications are adapted to BPF CO-RE, there
+will be new learning and better understanding of additional facilities
+that need to be provided to provide best developer experience
+possible.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-2">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-3"></a>
+<button class="collapsible">BPF-to-BPF calls with tail call support, tail call optimization</button>
+<div class="content" id="session-3__">
+  <p>
+  <p><b>Intro:</b> <a href="bpfconf2019_talks/bpf_core_topics.pdf" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+For this slot, Daniel Borkmann presented two topics for discussion: i) how
+can we combine BPF-to-BPF calls and tail calls, and ii) in the face of retpolines,
+how can we avoid indirect calls for tail calls as well as subsystems calling
+into BPF context itself. One motivation for BPF-to-BPF calls was that this
+would allow to potentially supersede BPF tail calls. However, given the
+flexibility of tail calls and the need for a clean transition path for
+applications to avoid having to rework their BPF data path as well as
+orchestration of the former on a larger scale presents a bit of a challenge.
+Also, due to ensuring support for BPF programs so they can continue to
+run on older kernels with only tail calls available. In Cilium tail calls
+are used in various elaborate ways, for example, to jump into another
+local container specific BPF program that is handling policy. The latter program
+is called out of tc BPF layer from the physical as well as from the veth peer
+device of another container in the host namespace. Depending on the policy
+for the target container, that container-specific policy program could
+have L7 or L4 handling compiled out while for other containers have it compiled
+in. From a (global) host perspective, this policy program can be updated
+atomically at runtime in order to compile policy handling code in/out
+in case of a configuration change. Another use case in Cilium where tail
+calls are essential is to use them as an entry point. Meaning, in the Cilium
+container's BPF fs instance pinned tail call maps are used to manage programs
+running in other application container or pods on the same node without
+having to perform a cumbersome switch of namespaces for program management.
+BPF-to-BPF calls do not have this kind of flexibility today. Some other
+historic reasons for compatibility with older kernels is the use of tail calls to 'outsource'
+slow-path code in order to work around verifier complexity limits which
+have been a constant source of pain (mostly) in the past, that is, for
+supported kernels older than 4.14.
+<p></p>
+This also means, however, that more complex BPF applications have a hard time
+to make use of and benefit from BPF-to-BPF calls. For Cilium today, this means
+that all BPF library helper code still needs to be __always_inline annotated
+which bloats up the instruction image and is not very icache friendly. In
+some BPF program configurations, we are close to hitting the 4096 instruction
+limit that is enforced on 5.1 and older kernels. Preliminary experiments with
+removing __always_inline showed a reduction of program sections up to 15%
+as well as LLVM moving ~1,200 instructions under BPF-to-BPF calls into .text
+section. While running experiments, we also noticed that LLVM could not
+handle generating calls with more than 5 arguments, thus some parts from
+the BPF based connection tracker and load balancer had to remain inlined
+for the test. To tackle argument handling beyond the 5 arguments generically,
+we would need new push/pop BPF instructions such that they can be transferred
+via stack. Short term workaround is to pass a struct with needed members.
+In any case, allowing generic use of BPF-to-BPF calls in a first step
+would allow to let the compiler more naturally do its optimizations and
+speed up fast-path.
+<p></p>
+In order to get there, we've discussed two possible semantics for tail
+calls performed out of BPF-to-BPF calls: i) When a sub-program would
+execute a tail call, it would leave the current BPF program context
+entirely and switch over to the new program. This is pretty much similar
+to how they leave one program context and switch to another today. For
+this to work, it would require JIT changes. The idea would be rather
+similar to setjmp/longjmp. Upon entry to the main program, we would
+need to store the stack pointer (SP) from prologue side. After the
+epilogue in the main program there is a code section for tail calls
+emitted at an a-priori known location at JIT-time for sub-programs. This
+is needed for correctly unwinding the main program's stack. Out of
+a sub-program we save current SP, restore the main ones and jump to
+the tail call section. For fall-through case we restore the sub-program's
+SP and jump back to resume execution. Due to SP switch, the tail call
+counter from the main program is then being used, and the program we
+tail call into will restore regs properly upon exit. Option ii) would
+be that the tail called program replaces only the current sub-program
+so that on exit we continue at the next instruction from the call-site.
+This requires additional verifier support in that the return type of
+the tail called program must match the expected type at call site.
+<p></p>
+The group concluded that in any of the two cases, the maximum stack
+size must not exceed 512 bytes as today. From a semantic point of
+view, option ii) appears more natural to majority though tracking the
+number of tail calls would require JIT changes for sub-programs.
+Additionally, as a starting point for ii) some JITs like x86 one
+need slight rework to not skip over prologue. Once all JITs are
+consistent in this behavior, we can allow better stack tracking
+by avoiding a plain bump to 512 bytes. This is prerequisite for
+enabling tail calls in sub-programs such that verifier can track
+overall stack usage. Generally, the advantage for applications like
+Cilium is that a simple kernel probe can be implemented which
+then undefines an __always_inline (or
+similar) to switch over to use calls instead of inlining everything.
+On top of that, support for indirect BPF-to-BPF calls in BPF runtime
+has been brought up for discussion as well. Meaning, mechanics could
+be similar to tail calls except we return to the original program,
+and allow more than just passing in the context as an argument. For
+the latter required verifier extensions both tail calls and indirect
+calls could benefit from for implementing argument passing.
+<p></p>
+Last topic on tail calls presented by Daniel Borkmann was on converting
+indirect calls that are subject to expensive retpoline on x86 into direct
+ones. Initial work would focus on tail call maps since tail calls
+are often also used in fast-path. Aside from Cilium, Katran [0] as well
+as Cloudflare's processing pipeline rely on them heavily. In a second
+step, a similar mechanism could be reused for avoiding the indirect
+call into the BPF context itself which would help XDP, but also tc
+and tracing programs to reduce their overhead. Out of the BPF program
+a jump to a fixed address is performed. That address is to a per tail
+call map executable page. In that page, a binary search tree also known
+as branch funnel is constructed in similar way as compilers do when
+-fno-jump-table is set. The search key is the passed map lookup key. Once an
+entry has been found, we directly jump to the target program's entry point.
+The binary search tree is constructed from BPF instructions and
+passed to the JIT compiler. Updates would require a rewrite of the
+search tree. Given they are only performed out of user space, the
+map would need to be locked via mutex. The first instruction in the
+executable page could be a jump to a constant/fixed relative offset or a nop.
+Depending on where we would update, we'd then either patch-in the
+jump or the nop. The patching mechanism exists in the kernel already
+e.g. from static keys infrastructure. An optimization for this is
+the case where keys are constant at verification time. For this case,
+the JITed BPF program can be directly patched with a direct jump
+to the next program. A first prototype is currently being worked on.
+Conclusion was that this approach should then be tried on XDP side
+as well.
+<p></p>
+[0] http://vger.kernel.org/lpc-networking2018.html#session-10 (slide 36+)
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-3">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-4"></a>
+<button class="collapsible">libbpf unification and golang bindings</button>
+<div class="content" id="session-4__">
+  <p>
+  <p><b>Intro:</b> <a href="bpfconf2019_talks/bpf_core_topics.pdf" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+For libbpf, two main topics have been brought up for discussion by Daniel
+Borkmann, that is, libbpf unification as well as libbpf golang bindings. Today,
+there are several BPF ELF loaders in the wild. Aside from custom ones, most
+notably, there is libbpf and the one in iproute2. While historically the former
+had focused on tracing use-cases, the latter was implemented for BPF
+networking programs (tc, XDP) and to allow quick adoption given libbpf
+was not widely available. In case of Cilium we mainly rely on the object
+parsing behavior from the latter. While today both support more recent
+BPF features such as BPF-to-BPF calls or loading BTF etc, they differ
+in behavior in various other aspects, for example, ELF map representation,
+tail call loading or map pinning to name a few.
+<p></p>
+For the upstream kernel, we require that new features which affect the
+loading of BPF programs must have corresponding libbpf patches. Given
+that and the rapid adoption of libbpf, it is highly desirable to focus
+all development efforts on libbpf only and have others such as iproute2
+consume it. Going forward, this allows for consistent loader behavior
+and faster adoption of new BPF kernel features. Moreover, we can then
+standardize on a common format and conventions for BPF ELF files.
+<p></p>
+The main blocker for iproute2 conversion at this point is the difference
+in struct bpf_elf_map handling. While iproute2 is able to loader libbpf
+programs, libbpf does not know how to handle iproute2 ones. From the group
+discussions, we concluded on a couple of key points on this regard: i)
+iproute2 retains its current BPF loader for backwards compatibility, and
+imports libbpf as a submodule in similar fashion as done with pahole
+today. This allows to have latest kernel and libbpf features in sync
+with iproute2 releases (which are periodically done along with official
+kernel releases). A libbpf based loader inside iproute2 is then used as
+the main loader. ii) libbpf gets support for parsing struct bpf_elf_map
+items as BTF from the BPF object file. We will standardize members such
+as 'pinning' and tail call 'id' for libbpf as well, read them as BTF
+and allow for custom user handling in case of unknown fields. Given the
+use of BTF, we are also getting rid of the BPF_ANNOTATE_KV_PAIR() macro
+by having a fixed member 'key' and 'value' which embeds the struct into
+the map definition. The latter then allows for deriving the corresponding
+key and value size as well. iii) libbpf will add API helpers for BPF fs
+handling (e.g. mounting), tail call loading based on program sections
+and others which iproute2 can then consume on top, meaning, this will not
+automatically be done but left as iproute2 implementation specifics. We
+concluded that these three steps would allow for a proper transition,
+and Cilium could then benefit from latest libbpf transparently.
+<p></p>
+Independent of iproute2, we've also discussed ways for consuming libbpf
+features from other (non C/C++) languages. For the group discussion,
+golang was the focus given it's heavily used for Cilium [0] as well as in
+Cloudflare [1] to orchestrate the BPF data path. For Cilium in particular
+the use case is to be able to switch from iproute2 loader dependency to
+a full, native golang implementation to load and manage BPF object files.
+The former would then still be used for debugging purposes e.g. in case of
+reproducing verifier issues and such given common loader semantics. There
+are currently several BPF golang libraries [0-2] in the wild, each with
+a different set of features. For example [0,1] make use of BPF templating
+and therefore also need to parse the BPF ELF file in order to perform
+in-place updates. Full support for BTF is therefore desirable as well
+on top of the standard golang ELF parsing.
+<p></p>
+Three potential options have been discussed, all with pros and
+cons: i) Addition of cgo bindings to libbpf upstream. By directly
+integrating this into the kernel's tools/lib/bpf/ directory, it would
+allow for more exposure, review and broader coverage of libbpf APIs. The
+big downside however is that each transition from go to cgo is expensive
+as it builds up its own execution environment [3]. Another point that
+has been brought up is the packaging. Dependencies are usually resolved
+via 'go get' and in case of libbpf, developers would have the barrier to
+first build an upstream libbpf shared object or rely on one from
+distributions. Latter has the additional issue that it may not fit to
+the targeted golang bindings. Similar challenge is on vendoring side
+as well. Thus, in terms of golang workflow this
+won't fit very well. ii) Another thought that has been brought up was
+to pass the libbpf context back and forth through means that fit
+natively into the golang language such that a call to cgo could be
+avoided. One example was IPC via file descriptor between libbpf and
+golang. Some of the issues mentioned in i) would still not be addressed
+through such approach. Last but not least, iii) a native, official
+golang implementation of libbpf which we would place into the main
+github.com/libbpf organization. This has the downside of reinventing
+the wheel in that the majority of libbpf features would need to be
+ported over to the golang implementation, however, we could consolidate
+efforts in that case. From a golang developer perspective, this approach
+would have the lowest barrier of adoption, but from a maintenance
+perspective would not address the original issue, that is, maximum reuse
+of libbpf. This is unfortunately quite similar to the netlink adoption
+in golang in that pretty much everyone relies on a native golang
+implementation in [4]. One difference this would have compared to [4]
+is that the official golang library is maintained by the same community
+working on upstream BPF in the kernel. In any case, such library
+needs to come with a regression test suite such that libbpf and
+golang libbpf behavior can be compared side by side.
+<p></p>
+There was no satisfying conclusion for the golang BPF support thus far.
+The approach that is considered the most reasonable path forward right
+now would be option iii) that consolidates efforts into a native
+BPF golang library for github.com/libbpf.
+<p></p>
+[0] https://github.com/cilium/cilium/tree/master/pkg<br>
+[1] https://github.com/newtools/ebpf<br>
+[2] https://github.com/iovisor/gobpf<br>
+[3] https://golang.org/src/runtime/cgocall.go<br>
+[4] https://github.com/vishvananda/netlink
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-4">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-5"></a>
+<button class="collapsible">Unprivileged BPF through /dev/bpf</button>
+<div class="content" id="session-5__">
+<p><div align="right"><small><a href="bpfconf2019.html#session-5">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-6"></a>
+<button class="collapsible">eBPF, a wholistic approach</button>
+<div class="content" id="session-6__">
+  <p>
+  <p><b>Talk:</b> <a href="http://vger.kernel.org/~davem/lsfmm2019.pdf" target="_new">Slides</a></p>
+  <p><b>Abstract:</b></p>
+  <p>
+eBPF has grown by leaps and bounds over the past several years.  The
+growth of eBPF is only rivaled by technologies like Kubernetes and the
+Go language.
+<p></p>
+What started as a small set of application points (XDP, cls_bpf, basic
+tracing) has now expanded into just about every single realm of the
+kernel.
+<p></p>
+This discussion will cover:
+<ol>
+<li>
+   Where we started.  What eBPF look like at the beginning, what were
+   it's initial application points like, and how did people use it.
+</li><li>
+   Where are we now.  We will take a look at the plethora of areas
+   that eBPF can be applied to.  In particular we will look at how
+   such facilities can be used as individual elements, grouped
+   together to solve a specific domain problem.
+</li><li>
+   But, we have to go somewhere.  All of these existing methods, and
+   future ones, must be tied together neatly to maximize the developer
+   and DevOPS experience.  What kinds of things are fundamentally
+   necessary to achieve this?
+ </li>
+</ol>
+eBPF is and will be a tool for the masses to customize and control
+their systems however they want, and with whatever policies they see
+fit.  It is a technology that has truly relinquished control from
+system software engineers over to the users, where it belongs.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-6">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-7"></a>
+<button class="collapsible">BPF-based TPROXY</button>
+<div class="content" id="session-7__">
+  <p>
+  <p><b>Intro:</b> <a href="https://docs.google.com/presentation/d/1WN5QyrB0eFBC0HUM_ooyPcTMW-QfrkFb7Lp1l2O4gtc/edit?usp=sharing" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+Early during the conference in hallway conversations, it became apparent that both the Cilium project and Cloudflare's Spectrum product make use of the iptables feature known as TPROXY (Transparent Proxy). Cilium uses it to enforce network policies, by redirecting traffic to a proxy. Cloudflare use it to bind to all ports on an IP subnet. Developers involved in each of these projects have been digging around to figure out how this feature could translated to BPF, to ease the management and maintenance burden of applications configuring the Linux stack, as well as to make the socket selection more programmatic.
+<p></p>
+Joe Stringer and Lorenz Bauer presented three approaches for integrating this functionality with BPF: First, implementing a BPF helper to allow a socket to be associated with an skb at the TC BPF hook point, for example bpf_set_sk(). This could build upon the recently introduced socket lookup helpers so that the BPF program has full control over which socket is attached to the skb. In essence, the helper would work like early demux controlled by BPF. However, the socket is orphaned from the skb early in the IP stack, which renders such a helper ineffective. Eric Dumazet suggested that orphaning could be removed, provided other parts of the stack relying on this behaviour are fixed. Any existing paths such as tunnel/ppp handling which rely upon this code will need to introduce an skb_orphan() call before calling into ip_rcv_core(). If it’s not possible to avoid the orphan call, bpf_set_sk could be made available in a hook later in the IP stack. For instance, the lightweight tunnel hook appears to be in roughly the right area, but is currently very limited in scope. Moving to a different hook would entail significant work, and so wasn’t pursued further.
+<p></p>
+Second, there could be a dedicated socket dispatch hook introduced. Such a hook would bypass the orphan issue, but requires that the logic for socket lookup is placed later in the stack e.g. inet_lookup. This aligns more closely with Cloudflare’s use-case, but  is unsuitable to enforce policy, like Cilium does. The main concern with this solution is that it could turn out to be fairly invasive, since there need to be separate changes for IPv4 / 6, UDP and TCP lookups.
+<p></p>
+The third proposal is to introduce some sort of socket redirect helper similar to the packet redirect helpers that exist, for example bpf_redirect_to_sk(). This would be similar to the first proposal, but perhaps skip some pieces of the processing between the TC hook point and the socket receive---for instance, the prerouting hook or the routing table. This third proposal was deemed not to have many advantages over the first proposal, since it would be less integrated with the stack overall and may require additional code for validating the socket receive.
+<p></p>
+The consensus was that Cilium and Cloudflare would collaborate on bpf_set_sk. It integrates into the existing early demux infrastructure, and is therefore non-invasive. Additionally, Cloudflare will explore the changes needed for a socket dispatch hook, and send patches if it turns out to be viable.
+<p></p>
+One other point was raised in that the current socket lookup helpers do not respect SK_REUSEPORT BPF programs. This will need to also be addressed, but is considered orthogonal to the core TPROXY BPF question.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-7">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-8"></a>
+<button class="collapsible">AF_XDP queue IDs</button>
+<div class="content" id="session-8__">
+  <p>
+  <p><b>Intro:</b> <a href="https://docs.google.com/presentation/d/19OHiCTfazbWCaI93NERzLo14bTSgDAsrL2kWxztagaQ/edit#slide=id.g5712cadd2f_0_0" target="_new">Slides</a></p>
+  <p><b>Summary:</b></p>
+  <p>
+Recently added AF_XDP sockets [1][2] allow users to filter and zero-copy to user space packets arriving on a particular receive queue of a NIC. The queue setup is slightly involved, users are expected to exclude such queues from receiving normal traffic and install explicit hardware forwarding rules to select packets for the queue. Those steps are not automated in existing kernel samples, nor do BPF user libraries in tree (libbpf) help with performing them.
+  </p><p>
+Recently on the netdev mailing list a proposal had been made to automatically create special queues, separate from the ones of the stack and dedicated to AF_XDP when a socket is created, removing the need to reconfigure stack queues. This, however, poses a challenge because such queues would be invisible from networking APIs perspective, making enumerating and configuring them challenging. The problem already exists on the transmission side, where queues cannot be shared with the stack efficiently. BPF and networking developers are uneasy about creating special RX queues, until the known problems of the TX side can be resolved.
+  </p><p>
+One way to solve this problem of configuring invisible queues would be allowing the driver to interpret queue identifier (an unsigned 32 bit integer) in a way meaningful to the driver and the hardware, instead of assuming it is an integer in the range from 0 to the number of queues. Most likely device/driver queue identifier would end up encoding the queue sub-id and type. This relaxation does not aid discovering the queues of the system and requires hardware-specific knowledge in applications.
+  </p><p>
+The discussion ended without a strong conclusion, or new API suggestion. The existing AF_XDP API will likely remain untouched for now but hopefully will benefit from a better support for performing AF_XDP configuration tasks in BPF libraries.
+  </p><p>
+[1] https://www.kernel.org/doc/html/latest/networking/af_xdp.html<br>
+[2] https://lwn.net/Articles/750845/
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-8">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-9"></a>
+<button class="collapsible">BPF Bounded Loops Revisited</button>
+<div class="content" id="session-9__">
+  <p>
+  <p><b>Abstract:</b></p>
+  <p>
+BPFs lack of support for bounded loops has proven to make it difficult
+to implement logic that would be common in other environments. Macros
+have been invented to unroll complex loops, creative uses of maps and
+tail calls have appeared, but these solutions albeit "interesting" fail
+to solve the core problem.
+  </p><p>
+An initial prototype to handle bounded loops proceeded in the normal
+compiler textbook method. This means building a CFG, constructing the
+DOM tree, checking (ir)reducibility, finding invariants, and walking
+all the paths through the loop (Floyd-Hoare) to verify termination.
+This had some draw backs. First its a fair amount of complex code
+that impacts all users of the verifier regardless if loops are being
+used or not. But worse its almost unusable because LLVM generates
+complex loop structures that are difficult to pattern match (find
+invariants for) without even more code.
+  </p><p>
+I have decided there is no clean/easy way to do this without bringing
+the compiler onboard. We are building a prototype v2 that solves this
+roughly as follows,
+  <ol>
+  <li>
+      Provide interface between compiler and verifier to "hint" at
+      loop structures. We propose these can be pushed through BTF.
+  </li><li>
+      Compiler "hint" gives loop start and end to verifier. Verifier can
+      ensure that these "loops" are contiguous blocks of code that
+      does not have JMPs into it from other blocks.
+  </li><li>
+      Compiler has to build compliant loops. We plan to start simple
+      only allowing the compiler to build increasing/decreasing loops
+      that fit some pre-agreed template. For example, we "know" where
+      the invariants will be and how they will be compared at the end
+      (and only at the end) of the loop block. If this is violated we
+      will simply abort and complain to the compiler. As part of the
+      hints we can tell the verifier the type of loop to expect.
+  </li><li>
+      Add as many loop types as needed teaching the verifier the
+      loop types as we go.
+  </li>
+  </ol>
+The advantages are (a) if we never see a loop hint we never have
+to run the loop verification code, small/negligible perf hit for
+non-loop users, (b) easy to find loops no need for DOMs or reducibility
+checks, (c) always know where to find invariants and (d) hints can
+be added incrementally allowing compiler and verifier to create more
+complex structures in the future. The downside is we will be restricting
+the compilers ability to optimize loops. I anticipate this will be a
+small price to pay and worth it but lets run some tests on prototypes.
+  </p><p>
+We would like to discuss the above design, compare it with our initial
+design and share the latest prototype and measurements at the LSFMM BPF
+track.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-9">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-10"></a>
+<button class="collapsible">TCP syncookie generation from XDP</button>
+<div class="content" id="session-10__">
+<p><div align="right"><small><a href="bpfconf2019.html#session-10">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-11"></a>
+<button class="collapsible">Using BTF in pahole and perf</button>
+<div class="content" id="session-11__">
+  <p>
+  <p><b>Intro:</b> <a href="http://vger.kernel.org/~acme/perf/btf-perf-pahole-lsfmm-san-juan-2019/#/" target="_new">Slides</a></p>
+  <p><b>Abstract:</b></p>
+  <p>
+The presentation will go through recent developments in making information
+about types, function signatures to be always available, for the kernel and for
+BPF programs and the various possibilities that brings.
+  </p><p>
+Now pahole, a tool to show all sorts of information about data structures
+already used by the kernel community for years, can load DWARF and encode BTF,
+and also can read that info, be it converted from DWARF or directly generated
+by clang to the BPF target and show it just like it does for DWARF info, but
+much faster.
+  </p><p>
+A recent development, the deduplication of DWARF info will be described,
+showing how this dramatically reduces the space needed to encode all the
+kernel data structures and function signatures.
+  </p><p>
+How this is being used in various tools, including bpftool and 'perf trace',
+for instance to pretty print maps, will be showcased.
+  </p><p>
+Further use BTF in debuggers, making the conversion and deduplication of the
+kernel types be done as part of a production build, and havong it available in
+vmcores are other opportunities to discuss.
+  </p><p>
+With this always present type availability the usage of tools like
+pahole become more feasible and automatic detection of non optimal
+struct layouts can be done automatically, as part of kernel builds. It
+is now much faster due to the much more compact size of the type
+information.
+  </p><p>
+The comparision of the types used in BPF bytecode with that for the equivalent
+kernel type can be compared and under lots of cases allow for
+compile-once-run-anywhere BPF bytecode, with offset adjustments, etc.
+  </p><p>
+The need for kernel headers is diminished, with the possibility of
+rebuilding types using a tool like pahole or directly by perf, bcc,
+bpftrace, bpftool, etc.
+  </p><p>
+Advanced filtering in 'perf trace' strace-like mode is also facilitated,
+as well as the syscall function signatures for automatic pretty-printing
+of its arguments.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-10">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-12"></a>
+<button class="collapsible">BPF observability</button>
+<div class="content" id="session-12__">
+  <p>
+  <p><b>Talk:</b> <a href="https://www.slideshare.net/brendangregg/lsfmm-2019-bpf-observability-143092820" target="_new">Slides</a></p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-12">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-13"></a>
+<button class="collapsible">BPF debugging with single-step execution</button>
+<div class="content" id="session-13__">
+<p><div align="right"><small><a href="bpfconf2019.html#session-13">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+<tr><td>
+<a name="session-14"></a>
+<button class="collapsible">BPF memory accounting overhaul</button>
+<div class="content" id="session-14__">
+  <p>
+  <p><b>Summary:</b></p>
+  <p>
+The existing memory accounting model used by bpf was designed mostly
+as a security measure to allow non-root users to load bpf programs
+without a risk to damage the system. It's based on memlock rlimit.
+  <p></p>
+This approach shows its limits in our (Facebook's) production. First,
+most bpf programs are loaded from root, so the counter is shared
+between all programs, which are loading bpf programs or creating maps,
+and it's also used by generic memlock() users, which have no relation
+to bpf. Second, there is no simple way to get the current value, so
+usually hitting the limit looks like random -EACCES errors. This
+all makes the process of choosing proper limits hard.
+Last, per-user granularity isn't enough in many cases. Currently,
+it's possible to calculate the size of individual maps and programs,
+attribute them to different services, and sum to get an idea of memory
+footprint. However, it could be simpler and cheaper.
+  <p></p>
+Instead, memcg-based memory accounting was proposed. Memcgs are
+currently the main memory accounting and management mechanism, so
+the choice is obvious. It's possible to have a separate bpf entry
+in memory.stat file. Ownership model is TBD, but it seems that
+"whoever has created an object, becomes an owner and got charged
+for all the memory" is the approach to go. Memcg-based accounting
+can't probably completely replace the rlimit-based accounting
+(for non-root users), but can add missing features.
+  <p></p>
+In order to implement memcg-based accounting, the process of detaching
+bpf programs from cgroups should be reworked first (see
+"Cyclic dependency and cgroup-BPF auto-detach").
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-14">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+
+<tr><td>
+<a name="session-15"></a>
+<button class="collapsible">Cyclic dependency and cgroup-BPF auto-detach</button>
+<div class="content" id="session-15__">
+  <p>
+  <p><b>Summary:</b></p>
+  <p>
+Currently a bpf programs attached to a cgroup stays attached after
+removal of the cgroup. The goal of such design was to allow capturing
+and handling events which are happening with a cgroup after being
+deleted by a user. For example, an active socket can belong to a dying
+cgroup, and generally we want to be able to handle it with cgroup-bpf
+programs. Some program types (e.g. device control) have no chances to
+be executed after cgroup deletion.
+  <p></p>
+This ability doesn't come for free, and there is a couple of related
+issues, which we're facing in our production.
+  <p></p>
+1) Sometimes we do accumulate a large number of dying cgroups, and if
+each of them is holding few attached bpf programs with their maps,
+cgroup storages, etc, it's just a large waste of memory. The reason
+why sometimes we do accumulate dying cgroups is a separate topic,
+which has been discussed on LSF/MM. Currently we're solving this
+problem by detaching programs from userspace before cgroup removal. It
+usually works, but in some cases it fails (e.g. is userspace crashes)
+and we end up with many loaded bpf programs wasting the memory.
+  <p></p>
+2) It makes challenging the implementation of memcg memory accounting
+for bpf objects.  The problem is that any charged object is holding a
+reference to the corresponding memcg, memcg obviously keeps the cgroup
+in place, and cgroup is holding a reference to the bpf program, which
+underlying memory is potentially charged to the memcg. So it's a
+circular reference.
+  <p></p>
+Currently there are only two ways for a cgroup-bpf program to be
+executed: from a process context (device control, sysctls hooks, etc),
+and from network traffic handling (cgroup-skb). A dying cgroup can't
+contain any processes, so for the dying cgroup there is only one. So
+that enables a simple approach: let's count sockets associated with a
+cgroup using a percpu counter, and detach all bpf programs when: 1)
+cgroup is dying, i.e. has no attached processes, 2) the number of
+associated sockets reaches 0.
+  <p></p>
+This approach is simple, transparent for a user and solves the problem
+with saving the current semantics.
+  </p>
+<p><div align="right"><small><a href="bpfconf2019.html#session-15">[ permalink ]</a></small></div></p>
+</div>
+</td></tr>
+
+</table>
+
+<h2>Conference Info</h2>
+
+<table border = "0" cellpadding="3" cellspacing="1" width="100%">
+	<tr><td><b>Location:</b></td><td>San Juan, Puerto Rico, US, co-located with LSF/MM</td></tr>
+  <tr><td><b>Date:</b></td><td>April 30 - May 2, 2019</td></tr>
+  <tr><td></td><td><a href="https://docs.google.com/spreadsheets/d/1Z1pDL-XeUT1ZwMWrBL8T8q3vtSqZpLPgF3Bzu_jejfk/edit#gid=0" target="_new">Schedule</a> (tentative)</td></tr>
+  <tr><td><b>Attendees</b> (by invitation only)<b>:</b></td><td></td></tr>
+  <tr><td></td><td>Alexei Starovoitov (BPF maintainer, Facebook)</td></tr>
+  <tr><td></td><td>Daniel Borkmann (BPF maintainer, Cilium)</td></tr>
+  <tr><td></td><td>David S. Miller (netdev maintainer, Red Hat)</td></tr>
+  <tr><td></td><td>Andrii Nakryiko (Facebook)</td></tr>
+  <tr><td></td><td>Arnaldo Carvalho de Melo (Red Hat)</td></tr>
+  <tr><td></td><td>Brendan Gregg (Netflix)</td></tr>
+  <tr><td></td><td>Eric Dumazet (Google)</td></tr>
+  <tr><td></td><td>Jakub Kicinski (Netronome)</td></tr>
+  <tr><td></td><td>Jann Horn (Google)</td></tr>
+  <tr><td></td><td>Joe Stringer (Cilium)</td></tr>
+  <tr><td></td><td>John Fastabend (Cilium)</td></tr>
+  <tr><td></td><td>Lorenz Bauer (Cloudflare)</td></tr>
+  <tr><td></td><td>Roman Gushchin (Facebook)</td></tr>
+  <tr><td></td><td>Stanislav Fomichev (Google)</td></tr>
+  <tr><td></td><td>... as well as other attendees from LSF/MM</td></tr>
+  <tr><td><b>Group Picture:</b></td><td></td></tr>
+</table>
+</p>
+<p><center><img src="bpfconf2019_talks/bpfconf_group_2018.jpg"><br><br><div align="right">(Photo by Andrii Nakryiko)</div></center></p>
+<p><center><img src="bpfconf2019_talks/bpfconf_group_2018_2.jpg"><br><br><div align="right">(Photo by Brendan Gregg)</div></center></p>
+
+</li></td></tr>
+</tbody></table>
+<script>
+function toggleDiv(a) {
+    var content = document.getElementById(a);
+    if (content) {
+        content.style.display = "block"
+	content.previousElementSibling.classList.toggle("active");
+    }
+    return true;
+}
+
+for (i = 1; i < 15; i++) {
+    if (self.location.hash == "#session-" + i)
+        toggleDiv("session-" + i + "__");
+}
+</script>
+<script>
+var coll = document.getElementsByClassName("collapsible");
+var i;
+
+for (i = 0; i < coll.length; i++) {
+    coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        if (content.style.display === "block") {
+            content.style.display = "none";
+        } else {
+            content.style.display = "block";
+        }
+    });
+}
+</script>
+</body></html>
