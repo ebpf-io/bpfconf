@@ -1,8 +1,9 @@
 [build]
-  publish = "."   
-  command = ""    
-  
+  publish = "."
+  command = ""
+
 [[redirects]]
   from = "/"
   to = "/bpfconf2024/bpfconf2024.html"
   status = 200
+  force = true
